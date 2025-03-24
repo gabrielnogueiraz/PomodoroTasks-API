@@ -3,3 +3,6 @@ dist/
 *.log
 .env
 *.db
+
+*.sqlite
+src/database/database.sqlite
