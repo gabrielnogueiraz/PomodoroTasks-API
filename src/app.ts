@@ -1,4 +1,9 @@
-import express, { NextFunction, Request, Response, ErrorRequestHandler } from "express";
+import express, {
+  NextFunction,
+  Request,
+  Response,
+  ErrorRequestHandler,
+} from "express";
 import cors from "cors";
 import "express-async-errors";
 import { routes } from "./routes/index";
@@ -9,11 +14,16 @@ app.use(cors());
 app.use(express.json());
 app.use(routes);
 
-const errorHandler: ErrorRequestHandler = (err, req, res, next) => {
+const errorHandler: ErrorRequestHandler = (
+  err: Error,
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   console.error(err);
   res.status(500).json({
     status: "error",
-    message: "Internal server error"
+    message: "Internal server error",
   });
 };
 
