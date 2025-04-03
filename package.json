@@ -6,6 +6,7 @@
     "start": "node dist/server.js",
     "dev": "ts-node-dev --transpile-only --ignore-watch node_modules src/server.ts",
     "build": "tsc",
+    "build:render": "npm ci --include=dev && tsc",
     "typeorm": "typeorm-ts-node-commonjs",
     "migration:create": "typeorm migration:create",
     "migration:run": "npm run typeorm migration:run -- -d src/data-source.ts",
