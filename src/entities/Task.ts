@@ -1,5 +1,6 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, OneToMany } from "typeorm";
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, OneToMany, ManyToOne } from "typeorm";
 import { Pomodoro } from "./Pomodoro";
+import { User } from "./User";
 
 export enum TaskStatus {
   PENDING = "pending",
@@ -50,6 +51,9 @@ export class Task {
 
   @OneToMany(() => Pomodoro, pomodoro => pomodoro.task)
   pomodoros: Pomodoro[];
+
+  @ManyToOne(() => User, user => user.tasks)
+  user: User;
 
   @CreateDateColumn()
   createdAt: Date;
