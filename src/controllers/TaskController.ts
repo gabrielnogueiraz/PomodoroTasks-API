@@ -34,6 +34,21 @@ export class TaskController {
   async createTask(req: Request, res: Response): Promise<void> {
     const taskData = req.body;
 
+    // Validação básica do formato de horário se fornecido
+    if (taskData.startTime && !this.isValidTimeFormat(taskData.startTime)) {
+      res
+        .status(400)
+        .json({ message: "Formato de horário inicial inválido. Use HH:mm" });
+      return;
+    }
+
+    if (taskData.endTime && !this.isValidTimeFormat(taskData.endTime)) {
+      res
+        .status(400)
+        .json({ message: "Formato de horário final inválido. Use HH:mm" });
+      return;
+    }
+
     const task = await this.taskService.create(taskData);
     res.status(201).json(task);
   }
@@ -41,6 +56,21 @@ export class TaskController {
   async updateTask(req: Request, res: Response): Promise<void> {
     const { id } = req.params;
     const taskData = req.body;
+
+    // Validação básica do formato de horário se fornecido
+    if (taskData.startTime && !this.isValidTimeFormat(taskData.startTime)) {
+      res
+        .status(400)
+        .json({ message: "Formato de horário inicial inválido. Use HH:mm" });
+      return;
+    }
+
+    if (taskData.endTime && !this.isValidTimeFormat(taskData.endTime)) {
+      res
+        .status(400)
+        .json({ message: "Formato de horário final inválido. Use HH:mm" });
+      return;
+    }
 
     const updatedTask = await this.taskService.update(id, taskData);
 
@@ -81,5 +111,45 @@ export class TaskController {
     }
 
     res.json(updatedTask);
+  }
+
+  // Novo método para marcar como concluída
+  async markAsCompleted(req: Request, res: Response): Promise<void> {
+    const { id } = req.params;
+
+    const updatedTask = await this.taskService.markAsCompleted(id);
+
+    if (!updatedTask) {
+      res.status(404).json({ message: "Task not found" });
+      return;
+    }
+
+    res.json({
+      message: "Tarefa marcada como concluída",
+      task: updatedTask,
+    });
+  }
+
+  // Novo método para desmarcar como concluída
+  async markAsIncomplete(req: Request, res: Response): Promise<void> {
+    const { id } = req.params;
+
+    const updatedTask = await this.taskService.markAsIncomplete(id);
+
+    if (!updatedTask) {
+      res.status(404).json({ message: "Task not found" });
+      return;
+    }
+
+    res.json({
+      message: "Tarefa desmarcada como concluída",
+      task: updatedTask,
+    });
+  }
+
+  // Método auxiliar para validar formato de horário
+  private isValidTimeFormat(time: string): boolean {
+    const timeRegex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/;
+    return timeRegex.test(time);
   }
 }
