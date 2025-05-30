@@ -1,8 +1,11 @@
 import { Router, Request, Response } from "express";
 import { PomodoroController } from "../controllers/PomodoroController";
+import { authMiddleware } from "../middleware/auth";
 
 const pomodoroRoutes = Router();
 const pomodoroController = new PomodoroController();
+
+pomodoroRoutes.use(authMiddleware);
 
 pomodoroRoutes.get("/", (req: Request, res: Response) =>
   pomodoroController.getAllPomodoros(req, res)
