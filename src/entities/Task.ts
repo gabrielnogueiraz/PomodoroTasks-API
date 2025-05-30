@@ -9,6 +9,7 @@ import {
 } from "typeorm";
 import { Pomodoro } from "./Pomodoro";
 import { User } from "./User";
+import { Flower } from "./Flower";
 
 export enum TaskStatus {
   PENDING = "pending",
@@ -73,9 +74,11 @@ export class Task {
   // Nova coluna para data de conclusão
   @Column({ nullable: true })
   completedAt: Date;
-
   @OneToMany(() => Pomodoro, (pomodoro) => pomodoro.task)
   pomodoros: Pomodoro[];
+
+  @OneToMany(() => Flower, (flower) => flower.task)
+  flowers: Flower[];
 
   @ManyToOne(() => User, (user) => user.tasks)
   user: User;
