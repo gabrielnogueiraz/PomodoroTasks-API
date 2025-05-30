@@ -1,5 +1,7 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, OneToMany } from "typeorm";
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, OneToMany, OneToOne } from "typeorm";
 import { Task } from "./Task";
+import { Flower } from "./Flower";
+import { Garden } from "./Garden";
 
 @Entity()
 export class User {
@@ -17,6 +19,12 @@ export class User {
 
   @OneToMany(() => Task, task => task.user)
   tasks: Task[];
+
+  @OneToMany(() => Flower, flower => flower.user)
+  flowers: Flower[];
+
+  @OneToOne(() => Garden, garden => garden.user)
+  garden: Garden;
 
   @CreateDateColumn()
   createdAt: Date;
