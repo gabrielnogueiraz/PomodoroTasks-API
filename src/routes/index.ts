@@ -2,12 +2,14 @@ import { Router, Request, Response } from "express";
 import { taskRoutes } from "./task.routes";
 import { pomodoroRoutes } from "./pomodoro.routes";
 import { authRoutes } from "./auth.routes";
+import { flowerRoutes } from "./flower.routes";
 
 const routes = Router();
 
 routes.use("/api/auth", authRoutes);
 routes.use("/api/tasks", taskRoutes);
 routes.use("/api/pomodoros", pomodoroRoutes);
+routes.use("/api/flowers", flowerRoutes);
 
 routes.get("/", (req: Request, res: Response) => {
   res.json({ message: "Pomodoro Tasks API is running!" });
