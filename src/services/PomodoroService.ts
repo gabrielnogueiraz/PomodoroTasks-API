@@ -3,14 +3,17 @@ import { Pomodoro, PomodoroStatus } from "../entities/Pomodoro";
 import { Task } from "../entities/Task";
 import { Repository } from "typeorm";
 import { TaskService } from "./TaskService";
+import { FlowerService } from "./FlowerService";
 
 export class PomodoroService {
   private pomodoroRepository: Repository<Pomodoro>;
   private taskService: TaskService;
+  private flowerService: FlowerService;
 
   constructor() {
     this.pomodoroRepository = AppDataSource.getRepository(Pomodoro);
     this.taskService = new TaskService();
+    this.flowerService = new FlowerService();
   }
 
   async findAll(): Promise<Pomodoro[]> {
@@ -63,13 +66,21 @@ export class PomodoroService {
     pomodoro.status = PomodoroStatus.IN_PROGRESS;
     
     return this.pomodoroRepository.save(pomodoro);
-  }
-
-  async complete(id: string): Promise<Pomodoro | null> {
-    const pomodoro = await this.findById(id);
-    
-    if (!pomodoro || !pomodoro.task) {
+  }  async complete(id: string, userId: string): Promise<Pomodoro | null> {
+    const pomodoro = await this.pomodoroRepository.findOne({
+      where: { id },
+      relations: ["task", "task.user"]
+    });
+      if (!pomodoro) {
       return null;
+    }
+
+    if (pomodoro.task && pomodoro.task.user && pomodoro.task.user.id !== userId) {
+      return null;
+    }
+
+    if (pomodoro.status !== PomodoroStatus.IN_PROGRESS) {
+      throw new Error('Pomodoro não está em progresso');
     }
     
     pomodoro.endTime = new Date();
@@ -77,12 +88,20 @@ export class PomodoroService {
     
     const savedPomodoro = await this.pomodoroRepository.save(pomodoro);
     
-    // Update completed pomodoros count in the task
     if (pomodoro.task) {
       await this.taskService.updateCompletedPomodoros(
         pomodoro.task.id, 
         (pomodoro.task.completedPomodoros || 0) + 1
       );
+
+      try {
+        await this.flowerService.createFlowerForPomodoroCompletion(
+          userId,
+          pomodoro.task.id
+        );
+      } catch (error) {
+        console.error('Erro ao criar flor para pomodoro:', error);
+      }
     }
     
     return savedPomodoro;
