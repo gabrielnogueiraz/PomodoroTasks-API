@@ -63,10 +63,16 @@ export class PomodoroController {
 
     res.json(pomodoro);
   }
-
   async completePomodoro(req: Request, res: Response): Promise<void> {
     const { id } = req.params;
-    const pomodoro = await this.pomodoroService.complete(id);
+    const userId = req.user?.id;
+
+    if (!userId) {
+      res.status(401).json({ message: "Usuário não autenticado" });
+      return;
+    }
+
+    const pomodoro = await this.pomodoroService.complete(id, userId);
 
     if (!pomodoro) {
       res.status(404).json({ message: "Pomodoro not found" });
