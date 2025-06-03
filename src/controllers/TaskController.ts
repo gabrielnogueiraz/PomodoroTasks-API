@@ -30,9 +30,14 @@ export class TaskController {
 
     res.json(task);
   }
-
   async createTask(req: Request, res: Response): Promise<void> {
     const taskData = req.body;
+    const userId = req.user?.id;
+
+    if (!userId) {
+      res.status(401).json({ message: "Usuário não autenticado" });
+      return;
+    }
 
     // Validação básica do formato de horário se fornecido
     if (taskData.startTime && !this.isValidTimeFormat(taskData.startTime)) {
@@ -49,6 +54,9 @@ export class TaskController {
       return;
     }
 
+    // Associar o usuário à tarefa
+    taskData.user = { id: userId };
+    
     const task = await this.taskService.create(taskData);
     res.status(201).json(task);
   }
