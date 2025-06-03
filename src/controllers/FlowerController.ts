@@ -41,34 +41,17 @@ export class FlowerController {
 
     const stats = await this.flowerService.getGardenStats(userId);
     res.json(stats);
-  }
-  async createFlowerForPomodoro(req: Request, res: Response): Promise<void> {
+  }  async createFlowerForPomodoro(req: Request, res: Response): Promise<void> {
     const userId = req.user?.id;
-    const { taskId } = req.body;
 
     if (!userId) {
       res.status(401).json({ message: "Usuário não autenticado" });
       return;
     }
-
-    if (!taskId) {
-      res.status(400).json({ message: "ID da tarefa é obrigatório" });
-      return;
-    }
-
-    const flower = await this.flowerService.createFlowerForPomodoroCompletion(
-      userId,
-      taskId
-    );
-
-    if (!flower) {
-      res.status(404).json({ message: "Tarefa não encontrada ou não pertence ao usuário" });
-      return;
-    }
-
-    res.status(201).json({
-      message: "Flor criada com sucesso!",
-      flower,
+    
+    res.status(410).json({ 
+      message: "Este endpoint foi removido. As flores são criadas automaticamente ao completar pomodoros.",
+      suggestion: "Use POST /api/pomodoros/:id/complete para completar um pomodoro"
     });
   }
 
