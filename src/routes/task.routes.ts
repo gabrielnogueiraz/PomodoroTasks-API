@@ -31,7 +31,6 @@ taskRoutes.patch("/:id/status", (req: Request, res: Response) =>
   taskController.updateTaskStatus(req, res)
 );
 
-// Novas rotas para marcar/desmarcar como concluída
 taskRoutes.patch("/:id/complete", (req: Request, res: Response) =>
   taskController.markAsCompleted(req, res)
 );
