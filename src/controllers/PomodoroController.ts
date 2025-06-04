@@ -81,12 +81,17 @@ export class PomodoroController {
 
     res.json(pomodoro);
   }
-
   async interruptPomodoro(req: Request, res: Response): Promise<void> {
     const { id } = req.params;
     const { notes } = req.body;
+    const userId = req.user?.id;
 
-    const pomodoro = await this.pomodoroService.interrupt(id, notes);
+    if (!userId) {
+      res.status(401).json({ message: "Usuário não autenticado" });
+      return;
+    }
+
+    const pomodoro = await this.pomodoroService.interrupt(id, userId, notes);
 
     if (!pomodoro) {
       res.status(404).json({ message: "Pomodoro not found" });
