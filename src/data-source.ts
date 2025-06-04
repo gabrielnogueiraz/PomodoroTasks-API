@@ -5,6 +5,7 @@ import { Pomodoro } from "./entities/Pomodoro";
 import { User } from "./entities/User";
 import { Flower } from "./entities/Flower";
 import { Garden } from "./entities/Garden";
+import { LumiMemory } from "./entities/LumiMemory";
 import { DatabaseManager } from "./config/database-manager";
 import * as dotenv from "dotenv";
 
@@ -20,21 +21,19 @@ const createDataSource = () => {
       port: parseInt(process.env.DATABASE_PORT || "5432"),
       username: process.env.DATABASE_USER || "postgres",
       password: process.env.DATABASE_PASSWORD || "",
-      database: process.env.DATABASE_NAME || "pomodorotasks",
-      synchronize: true,
+      database: process.env.DATABASE_NAME || "pomodorotasks",      synchronize: true,
       logging: process.env.NODE_ENV === "development",
-      entities: [Task, Pomodoro, User, Flower, Garden],
+      entities: [Task, Pomodoro, User, Flower, Garden, LumiMemory],
       migrations: [],
       subscribers: [],
       ssl: process.env.NODE_ENV === "production" ? { rejectUnauthorized: false } : false,
     });
   } else {
     return new DataSource({
-      type: "sqlite",
-      database: process.env.DATABASE_PATH || "src/database/database.sqlite",
+      type: "sqlite",      database: process.env.DATABASE_PATH || "src/database/database.sqlite",
       synchronize: true,
       logging: false,
-      entities: [Task, Pomodoro, User, Flower, Garden],
+      entities: [Task, Pomodoro, User, Flower, Garden, LumiMemory],
       migrations: [],
       subscribers: [],
     });
