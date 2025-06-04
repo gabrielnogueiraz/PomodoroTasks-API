@@ -23,7 +23,4 @@ flowerRoutes.get("/check-rare", (req: Request, res: Response) =>
   flowerController.checkRareFlower(req, res)
 );
 
-// Endpoint POST removido para evitar duplicação de flores
-// As flores são criadas automaticamente ao completar pomodoros
-
 export { flowerRoutes };
