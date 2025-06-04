@@ -61,18 +61,15 @@ export class TaskService {
 
     task.status = status;
 
-    // Se a tarefa foi marcada como concluída, adiciona a data de conclusão
     if (status === TaskStatus.COMPLETED) {
       task.completedAt = new Date();
     } else if (task.completedAt) {
-      // Se foi desmarcada como concluída, remove a data de conclusão
       task.completedAt = null;
     }
 
     return this.taskRepository.save(task);
   }
 
-  // Novo método específico para marcar como concluída
   async markAsCompleted(id: string): Promise<Task | null> {
     const task = await this.findById(id);
 
@@ -86,7 +83,6 @@ export class TaskService {
     return this.taskRepository.save(task);
   }
 
-  // Novo método específico para desmarcar como concluída
   async markAsIncomplete(id: string): Promise<Task | null> {
     const task = await this.findById(id);
 
