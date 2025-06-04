@@ -17,13 +17,14 @@ Este projeto implementa uma API RESTful para gerenciar tarefas e sessões Pomodo
 - **TypeScript**: Superset tipado de JavaScript
 - **Express**: Framework web para Node.js
 - **TypeORM**: ORM (Object-Relational Mapping) para bancos de dados
-- **SQLite**: Banco de dados leve e embarcado
+- **PostgreSQL**: Banco de dados relacional robusto e escalável
 - **Jest**: Framework de testes
 
 ## 📋 Pré-requisitos
 
 - **Node.js** (versão 14 ou superior)
 - **npm** (normalmente vem com o Node.js)
+- **PostgreSQL** (versão 12 ou superior)
 
 ## 🚀 Instalação
 
@@ -43,14 +44,26 @@ npm install
 3. Crie um arquivo `.env` na raiz do projeto com as seguintes variáveis:
 
 ```
-DATABASE_URL="file:./database.sqlite"
-PORT=8080
+DATABASE_TYPE=postgres
+DATABASE_HOST=localhost
+DATABASE_PORT=5432
+DATABASE_NAME=pomodorotasks
+DATABASE_USER=postgres
+DATABASE_PASSWORD=sua_senha_aqui
+JWT_SECRET=seu_jwt_secret_aqui
+PORT=3000
 ```
 
-4. Crie a pasta para o banco de dados e execute as migrações:
+4. Configure e inicialize o banco de dados:
 
 ```bash
-npx typeorm migration:run
+npm run db:setup
+```
+
+5. (Opcional) Se você tinha dados em SQLite e quer migrá-los:
+
+```bash
+npm run db:migrate
 ```
 
 ## 🎯 Executando o Projeto
@@ -72,6 +85,19 @@ Para compilar o projeto e executá-lo em modo de produção:
 ```bash
 npm run build
 npm start
+```
+
+### 🗃️ Scripts de Banco de Dados
+
+```bash
+# Configurar banco de dados (primeira vez)
+npm run db:setup
+
+# Migrar dados do SQLite (se existir)
+npm run db:migrate
+
+# Reset completo do banco (CUIDADO: apaga todos os dados)
+npm run db:reset
 ```
 
 ## 📂 Estrutura do Projeto
