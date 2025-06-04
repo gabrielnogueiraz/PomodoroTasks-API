@@ -52,7 +52,6 @@ export class Task {
   @Column({ nullable: true })
   dueDate: Date;
 
-  // Novas colunas para data/hora inicial e final
   @Column({ nullable: true })
   startDate: Date;
 
@@ -60,10 +59,10 @@ export class Task {
   endDate: Date;
 
   @Column({ nullable: true })
-  startTime: string; // Formato: "HH:mm"
+  startTime: string; 
 
   @Column({ nullable: true })
-  endTime: string; // Formato: "HH:mm"
+  endTime: string; 
 
   @Column({ default: 0 })
   estimatedPomodoros: number;
@@ -71,7 +70,6 @@ export class Task {
   @Column({ default: 0 })
   completedPomodoros: number;
 
-  // Nova coluna para data de conclusão
   @Column({ nullable: true })
   completedAt: Date;
   @OneToMany(() => Pomodoro, (pomodoro) => pomodoro.task)
