@@ -2,6 +2,7 @@ import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateCol
 import { Task } from "./Task";
 import { Flower } from "./Flower";
 import { Garden } from "./Garden";
+import { LumiMemory } from "./LumiMemory";
 
 @Entity()
 export class User {
@@ -22,9 +23,11 @@ export class User {
 
   @OneToMany(() => Flower, flower => flower.user)
   flowers: Flower[];
-
   @OneToOne(() => Garden, garden => garden.user)
   garden: Garden;
+
+  @OneToOne(() => LumiMemory, lumiMemory => lumiMemory.user)
+  lumiMemory: LumiMemory;
 
   @CreateDateColumn()
   createdAt: Date;
