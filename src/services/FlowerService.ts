@@ -4,15 +4,18 @@ import { Garden } from "../entities/Garden";
 import { Task, TaskPriority } from "../entities/Task";
 import { User } from "../entities/User";
 import { Repository } from "typeorm";
+import { LumiService } from "./LumiService";
 
 export class FlowerService {
   private flowerRepository: Repository<Flower>;
   private gardenRepository: Repository<Garden>;
+  private lumiService: LumiService;
 
   constructor() {
     this.flowerRepository = AppDataSource.getRepository(Flower);
     this.gardenRepository = AppDataSource.getRepository(Garden);
-  }  async createFlowerForPomodoroCompletion(
+    this.lumiService = new LumiService();
+  }async createFlowerForPomodoroCompletion(
     userId: string,
     taskId: string
   ): Promise<Flower | null> {
@@ -97,10 +100,24 @@ export class FlowerService {
         earnedFromTaskTitle: task.title,
         user: { id: userId } as User,
         task: { id: taskId } as Task,
-      });
-
-      const savedFlower = await this.flowerRepository.save(flower);
+      });      const savedFlower = await this.flowerRepository.save(flower);
       console.log(`✅ Flor criada com sucesso: ID ${savedFlower.id}, Cor: ${savedFlower.color}, Tipo: ${savedFlower.type}`);
+      
+      // Notificar Lumi sobre a criação da flor
+      try {
+        if (savedFlower.type === FlowerType.RARE) {
+          // Notificação especial para flores raras
+          await this.lumiService.recordFlowerEarned(userId, {
+            ...savedFlower,
+            isRare: true,
+            specialMessage: "Parabéns! Você conquistou uma flor rara!"
+          });
+        } else {
+          await this.lumiService.recordFlowerEarned(userId, savedFlower);
+        }
+      } catch (error) {
+        console.warn("Failed to notify Lumi about flower creation:", error);
+      }
       
       return savedFlower;
     } catch (error) {
