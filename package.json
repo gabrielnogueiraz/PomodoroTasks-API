@@ -11,9 +11,9 @@
     "migration:run": "npm run typeorm migration:run -- -d src/data-source.ts",
     "migration:revert": "npm run typeorm migration:revert -- -d src/data-source.ts",    "db:setup": "ts-node scripts/setup-db.ts",
     "db:reset": "ts-node scripts/reset-db.ts",
-    "db:migrate": "ts-node scripts/migrate-data.ts",
-    "config:validate": "ts-node scripts/validate-config.ts",
-    "test": "jest"
+    "db:migrate": "ts-node scripts/migrate-data.ts",    "config:validate": "ts-node scripts/validate-config.ts",
+    "test": "jest",
+    "test:lumi": "ts-node scripts/test-lumi-integration.ts"
   },
   "keywords": [],
   "author": "",
