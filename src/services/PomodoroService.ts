@@ -47,7 +47,7 @@ export class PomodoroService {
     
     const pomodoro = this.pomodoroRepository.create({
       task,
-      duration: pomodoroData.duration || 25 * 60, // Default: 25 minutes
+      duration: pomodoroData.duration || 25 * 60, 
       notes: pomodoroData.notes,
       status: PomodoroStatus.IN_PROGRESS
     });
@@ -69,7 +69,6 @@ export class PomodoroService {
   }  async complete(id: string, userId: string): Promise<Pomodoro | null> {
     console.log(`Iniciando conclusão do pomodoro ${id} para usuário ${userId}`);
     
-    // Buscamos o pomodoro apenas com a relação da tarefa
     const pomodoro = await this.pomodoroRepository.findOne({
       where: { id },
       relations: ["task"]
@@ -80,7 +79,6 @@ export class PomodoroService {
       return null;
     }
     
-    // Verificar se o pomodoro já está completo para evitar duplicação
     if (pomodoro.status === PomodoroStatus.COMPLETED) {
       console.log(`Pomodoro ${id} já está completo, não criando flor duplicada`);
       return pomodoro;
@@ -119,8 +117,6 @@ export class PomodoroService {
         }
       } catch (error) {
         console.error('❌ Erro ao criar flor para pomodoro:', error);
-        // Não rejeitamos a Promise aqui, apenas logamos o erro
-        // O pomodoro foi completado com sucesso, mesmo se a flor falhou
       }
     } else {
       console.log(`⚠️ Pomodoro ${id} não tem tarefa associada`);
