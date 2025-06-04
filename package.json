@@ -1,8 +1,7 @@
 {
   "name": "pomodorotasks-backend",
   "version": "1.0.0",
-  "main": "dist/server.js",
-  "scripts": {
+  "main": "dist/server.js",  "scripts": {
     "start": "node dist/server.js",
     "dev": "ts-node-dev --transpile-only --ignore-watch node_modules src/server.ts",
     "build": "tsc",
@@ -10,7 +9,10 @@
     "typeorm": "typeorm-ts-node-commonjs",
     "migration:create": "typeorm migration:create",
     "migration:run": "npm run typeorm migration:run -- -d src/data-source.ts",
-    "migration:revert": "npm run typeorm migration:revert -- -d src/data-source.ts",
+    "migration:revert": "npm run typeorm migration:revert -- -d src/data-source.ts",    "db:setup": "ts-node scripts/setup-db.ts",
+    "db:reset": "ts-node scripts/reset-db.ts",
+    "db:migrate": "ts-node scripts/migrate-data.ts",
+    "config:validate": "ts-node scripts/validate-config.ts",
     "test": "jest"
   },
   "keywords": [],
@@ -20,6 +22,7 @@
   "dependencies": {
     "@types/bcryptjs": "^2.4.6",
     "@types/jsonwebtoken": "^9.0.9",
+    "@types/pg": "^8.15.4",
     "bcryptjs": "^3.0.2",
     "class-validator": "^0.14.1",
     "cors": "^2.8.5",
@@ -27,6 +30,7 @@
     "express": "^4.21.2",
     "express-async-errors": "^3.1.1",
     "jsonwebtoken": "^9.0.2",
+    "pg": "^8.16.0",
     "reflect-metadata": "^0.2.2",
     "sqlite3": "^5.1.7",
     "ts-node": "^10.9.2",
