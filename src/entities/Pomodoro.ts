@@ -12,7 +12,7 @@ export class Pomodoro {
   @PrimaryGeneratedColumn("uuid")
   id: string;
 
-  @Column({ default: 25 * 60 }) // 25 minutos em segundos
+  @Column({ default: 25 * 60 }) 
   duration: number;
 
   @Column({ nullable: true })
