@@ -39,7 +39,6 @@ export class TaskController {
       return;
     }
 
-    // Validação básica do formato de horário se fornecido
     if (taskData.startTime && !this.isValidTimeFormat(taskData.startTime)) {
       res
         .status(400)
@@ -54,9 +53,8 @@ export class TaskController {
       return;
     }
 
-    // Associar o usuário à tarefa
     taskData.user = { id: userId };
-    
+
     const task = await this.taskService.create(taskData);
     res.status(201).json(task);
   }
@@ -65,7 +63,6 @@ export class TaskController {
     const { id } = req.params;
     const taskData = req.body;
 
-    // Validação básica do formato de horário se fornecido
     if (taskData.startTime && !this.isValidTimeFormat(taskData.startTime)) {
       res
         .status(400)
@@ -121,7 +118,6 @@ export class TaskController {
     res.json(updatedTask);
   }
 
-  // Novo método para marcar como concluída
   async markAsCompleted(req: Request, res: Response): Promise<void> {
     const { id } = req.params;
 
@@ -138,7 +134,6 @@ export class TaskController {
     });
   }
 
-  // Novo método para desmarcar como concluída
   async markAsIncomplete(req: Request, res: Response): Promise<void> {
     const { id } = req.params;
 
@@ -155,7 +150,6 @@ export class TaskController {
     });
   }
 
-  // Método auxiliar para validar formato de horário
   private isValidTimeFormat(time: string): boolean {
     const timeRegex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/;
     return timeRegex.test(time);
