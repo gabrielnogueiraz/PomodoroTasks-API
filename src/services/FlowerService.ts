@@ -19,8 +19,7 @@ export class FlowerService {
     try {
       console.log(`🌱 Iniciando criação de flor - Usuário: ${userId}, Tarefa: ${taskId}`);
       
-      // Verificar se já existe uma flor para esta tarefa criada recentemente (últimos 30 segundos)
-      const recentDate = new Date(Date.now() - 30000); // 30 segundos atrás
+      const recentDate = new Date(Date.now() - 30000); 
       const existingFlower = await this.flowerRepository.findOne({
         where: {
           user: { id: userId },
@@ -34,29 +33,24 @@ export class FlowerService {
         return existingFlower;
       }
       
-      // Buscamos a tarefa primeiro de forma simplificada
       const taskRepository = AppDataSource.getRepository(Task);
       const task = await taskRepository.findOne({
         where: { id: taskId }
       });
       
-      // Se a tarefa não existir, retornar null
       if (!task) {
         console.log('❌ Tarefa não encontrada com ID:', taskId);
         return null;
       }
       
-      // Se chegarmos aqui, a tarefa existe e vamos criar a flor
       console.log(`📋 Criando flor para tarefa ${taskId} de título "${task.title}"`);
       
-      // Atualizamos o usuário da tarefa se necessário
       if (!task.user) {
         console.log(`🔗 Associando tarefa ${taskId} ao usuário ${userId}`);
         task.user = { id: userId } as User;
         await taskRepository.save(task);
       }
       
-      // Buscamos o usuário completo para garantir que está correto
       const userRepository = AppDataSource.getRepository(User);
       const user = await userRepository.findOne({
         where: { id: userId }
@@ -67,11 +61,9 @@ export class FlowerService {
         return null;
       }
 
-      // Obtém ou cria o jardim do usuário
       const garden = await this.getOrCreateGarden(userId);
       const flowerColor = this.getFlowerColorByPriority(task.priority);
       
-      // Atualiza a contagem de pomodoros consecutivos de alta prioridade
       if (task.priority === TaskPriority.HIGH) {
         garden.consecutiveHighPriorityPomodoros += 1;
         console.log(`🔥 Pomodoro de alta prioridade! Consecutivos: ${garden.consecutiveHighPriorityPomodoros}`);
@@ -79,11 +71,9 @@ export class FlowerService {
         garden.consecutiveHighPriorityPomodoros = 0;
       }
 
-      // Determina o tipo e cor da flor
       let flowerType = FlowerType.COMMON;
       let finalColor = flowerColor;
 
-      // Verifica se deve criar uma flor rara
       const shouldCreateRareFlower = await this.checkForRareFlower(userId, flowerColor);
       if (shouldCreateRareFlower || garden.consecutiveHighPriorityPomodoros >= 3) {
         flowerType = FlowerType.RARE;
@@ -96,13 +86,11 @@ export class FlowerService {
         console.log(`🌻 Criando flor comum ${flowerColor}`);
       }
 
-      // Incrementa o total de flores no jardim
       garden.totalFlowers += 1;
       await this.gardenRepository.save(garden);
 
       console.log(`💾 Salvando flor no banco de dados...`);
 
-      // Cria a nova flor com referências diretas aos IDs
       const flower = this.flowerRepository.create({
         type: flowerType,
         color: finalColor,
@@ -121,7 +109,6 @@ export class FlowerService {
     }
   }
   async getUserFlowers(userId: string): Promise<Flower[]> {
-    // Usando queryBuilder para maior controle sobre a consulta
     const flowers = await this.flowerRepository
       .createQueryBuilder("flower")
       .leftJoinAndSelect("flower.task", "task")
