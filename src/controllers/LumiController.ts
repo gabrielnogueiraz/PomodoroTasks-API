@@ -118,7 +118,7 @@ export class LumiController {
   async getConversationHistory(req: Request, res: Response): Promise<void> {
     try {
       const userId = req.user?.id;
-      const { limit = 10 } = req.query;
+      const limit = parseInt(req.query.limit as string) || 10;
 
       if (!userId) {
         res.status(401).json({ message: "Usuário não autenticado" });
@@ -126,15 +126,223 @@ export class LumiController {
       }
 
       const memory = await this.lumiService.getOrCreateLumiMemory(userId);
-      const history = memory.conversationHistory
-        .slice(-Number(limit))
-        .reverse();
+      const history = memory.conversationHistory.slice(-limit);
 
-      res.json(history);
+      res.json({
+        conversations: history,
+        totalCount: memory.conversationHistory.length
+      });
     } catch (error) {
-      console.error("Error getting conversation history:", error);
+      console.error("Error in getting conversation history:", error);
       res.status(500).json({ 
-        message: "Erro ao obter histórico de conversas",
+        message: "Erro interno do servidor",
+        error: error instanceof Error ? error.message : "Unknown error"
+      });
+    }
+  }
+
+  // 🆕 NOVOS ENDPOINTS PARA AÇÕES DA LUMI
+
+  /**
+   * Endpoint para a Lumi executar ações no sistema
+   */
+  async executeAction(req: Request, res: Response): Promise<void> {
+    try {
+      const userId = req.user?.id;
+      const { action, taskData, taskId, pomodoroData } = req.body;
+
+      if (!userId) {
+        res.status(401).json({ message: "Usuário não autenticado" });
+        return;
+      }
+
+      if (!action) {
+        res.status(400).json({ message: "Ação é obrigatória" });
+        return;
+      }
+
+      const lumiAction = {
+        type: action,
+        taskData,
+        taskId,
+        pomodoroData
+      };
+
+      const result = await this.lumiService.executeLumiAction(userId, lumiAction);
+
+      if (result.success) {
+        res.json(result);
+      } else {
+        res.status(400).json(result);
+      }
+    } catch (error) {
+      console.error("Error in Lumi action execution:", error);
+      res.status(500).json({ 
+        message: "Erro interno do servidor",
+        error: error instanceof Error ? error.message : "Unknown error"
+      });
+    }
+  }
+
+  /**
+   * Endpoint específico para criar tarefas via Lumi
+   */
+  async createTask(req: Request, res: Response): Promise<void> {
+    try {
+      const userId = req.user?.id;
+      const { title, description, priority, dueDate, estimatedPomodoros } = req.body;
+
+      if (!userId) {
+        res.status(401).json({ message: "Usuário não autenticado" });
+        return;
+      }
+
+      if (!title) {
+        res.status(400).json({ message: "Título da tarefa é obrigatório" });
+        return;
+      }
+
+      const result = await this.lumiService.executeLumiAction(userId, {
+        type: "create",
+        taskData: {
+          title,
+          description,
+          priority,
+          dueDate: dueDate ? new Date(dueDate) : undefined,
+          estimatedPomodoros
+        }
+      });
+
+      if (result.success) {
+        res.status(201).json(result);
+      } else {
+        res.status(400).json(result);
+      }
+    } catch (error) {
+      console.error("Error in Lumi task creation:", error);
+      res.status(500).json({ 
+        message: "Erro interno do servidor",
+        error: error instanceof Error ? error.message : "Unknown error"
+      });
+    }
+  }
+
+  /**
+   * Endpoint específico para atualizar tarefas via Lumi
+   */
+  async updateTask(req: Request, res: Response): Promise<void> {
+    try {
+      const userId = req.user?.id;
+      const { taskId } = req.params;
+      const { title, description, priority, dueDate, estimatedPomodoros } = req.body;
+
+      if (!userId) {
+        res.status(401).json({ message: "Usuário não autenticado" });
+        return;
+      }
+
+      if (!taskId) {
+        res.status(400).json({ message: "ID da tarefa é obrigatório" });
+        return;
+      }
+
+      const result = await this.lumiService.executeLumiAction(userId, {
+        type: "update",
+        taskId,
+        taskData: {
+          title,
+          description,
+          priority,
+          dueDate: dueDate ? new Date(dueDate) : undefined,
+          estimatedPomodoros
+        }
+      });
+
+      if (result.success) {
+        res.json(result);
+      } else {
+        res.status(400).json(result);
+      }
+    } catch (error) {
+      console.error("Error in Lumi task update:", error);
+      res.status(500).json({ 
+        message: "Erro interno do servidor",
+        error: error instanceof Error ? error.message : "Unknown error"
+      });
+    }
+  }
+
+  /**
+   * Endpoint específico para deletar tarefas via Lumi
+   */
+  async deleteTask(req: Request, res: Response): Promise<void> {
+    try {
+      const userId = req.user?.id;
+      const { taskId } = req.params;
+
+      if (!userId) {
+        res.status(401).json({ message: "Usuário não autenticado" });
+        return;
+      }
+
+      if (!taskId) {
+        res.status(400).json({ message: "ID da tarefa é obrigatório" });
+        return;
+      }
+
+      const result = await this.lumiService.executeLumiAction(userId, {
+        type: "delete",
+        taskId
+      });
+
+      if (result.success) {
+        res.json(result);
+      } else {
+        res.status(400).json(result);
+      }
+    } catch (error) {
+      console.error("Error in Lumi task deletion:", error);
+      res.status(500).json({ 
+        message: "Erro interno do servidor",
+        error: error instanceof Error ? error.message : "Unknown error"
+      });
+    }
+  }
+
+  /**
+   * Endpoint específico para iniciar pomodoros via Lumi
+   */
+  async startPomodoro(req: Request, res: Response): Promise<void> {
+    try {
+      const userId = req.user?.id;
+      const { taskId } = req.params;
+      const { duration, notes } = req.body;
+
+      if (!userId) {
+        res.status(401).json({ message: "Usuário não autenticado" });
+        return;
+      }
+
+      if (!taskId) {
+        res.status(400).json({ message: "ID da tarefa é obrigatório" });
+        return;
+      }
+
+      const result = await this.lumiService.executeLumiAction(userId, {
+        type: "start_pomodoro",
+        taskId,
+        pomodoroData: { duration, notes }
+      });
+
+      if (result.success) {
+        res.status(201).json(result);
+      } else {
+        res.status(400).json(result);
+      }
+    } catch (error) {
+      console.error("Error in Lumi pomodoro start:", error);
+      res.status(500).json({ 
+        message: "Erro interno do servidor",
         error: error instanceof Error ? error.message : "Unknown error"
       });
     }
