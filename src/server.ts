@@ -4,12 +4,14 @@ import * as dotenv from "dotenv";
 
 dotenv.config();
 
-const PORT = process.env.PORT || 3000;
+process.env.NODE_OPTIONS = "--max-old-space-size=4096";
+
+const PORT = process.env.PORT || 8080;
 
 initializeDatabase()
   .then(() => {
     console.log("Database initialized successfully!");
-    
+
     app.listen(PORT, () => {
       console.log(`Server is running on port ${PORT}`);
       console.log(`Using database: ${process.env.DATABASE_TYPE || "postgres"}`);
