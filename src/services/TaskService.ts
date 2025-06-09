@@ -1,15 +1,22 @@
 import { AppDataSource } from "../data-source";
 import { Task, TaskPriority, TaskStatus } from "../entities/Task";
 import { Repository } from "typeorm";
-import { LumiService } from "./LumiService";
 
 export class TaskService {
   private taskRepository: Repository<Task>;
-  private lumiService: LumiService;
+  private _lumiService: any;
 
   constructor() {
     this.taskRepository = AppDataSource.getRepository(Task);
-    this.lumiService = new LumiService();
+  }
+
+  // Lazy loading para quebrar dependência circular
+  private get lumiService() {
+    if (!this._lumiService) {
+      const { LumiService } = require("./LumiService");
+      this._lumiService = new LumiService();
+    }
+    return this._lumiService;
   }
 
   async findAll(): Promise<Task[]> {
