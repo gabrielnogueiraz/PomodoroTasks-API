@@ -4,19 +4,9 @@ import { Repository } from "typeorm";
 
 export class TaskService {
   private taskRepository: Repository<Task>;
-  private _lumiService: any;
 
   constructor() {
     this.taskRepository = AppDataSource.getRepository(Task);
-  }
-
-  // Lazy loading para quebrar dependência circular
-  private get lumiService() {
-    if (!this._lumiService) {
-      const { LumiService } = require("./LumiService");
-      this._lumiService = new LumiService();
-    }
-    return this._lumiService;
   }
 
   async findAll(): Promise<Task[]> {
@@ -43,20 +33,9 @@ export class TaskService {
   async create(taskData: Partial<Task>): Promise<Task> {
     const task = this.taskRepository.create(taskData);
     const savedTask = await this.taskRepository.save(task);
-    
-    // Notificar Lumi sobre a criação da tarefa
-    try {
-      if (taskData.user?.id) {
-        await this.lumiService.recordTaskAction(
-          taskData.user.id, 
-          "created", 
-          savedTask
-        );
-      }
-    } catch (error) {
-      console.warn("Failed to notify Lumi about task creation:", error);
-    }
-    
+
+    // Nota: Lumi AI independente monitora mudanças diretamente no banco
+
     return savedTask;
   }
   async update(id: string, taskData: Partial<Task>): Promise<Task | null> {
@@ -65,43 +44,12 @@ export class TaskService {
     if (!task) {
       return null;
     }
-
     this.taskRepository.merge(task, taskData);
     const updatedTask = await this.taskRepository.save(task);
-    
-    // Notificar Lumi sobre a atualização da tarefa
-    try {
-      if (task.user?.id) {
-        await this.lumiService.recordTaskAction(
-          task.user.id, 
-          "updated", 
-          updatedTask
-        );
-      }
-    } catch (error) {
-      console.warn("Failed to notify Lumi about task update:", error);
-    }
-    
+
     return updatedTask;
   }
   async delete(id: string): Promise<boolean> {
-    const task = await this.findById(id);
-    
-    if (task) {
-      // Notificar Lumi sobre a exclusão da tarefa
-      try {
-        if (task.user?.id) {
-          await this.lumiService.recordTaskAction(
-            task.user.id, 
-            "deleted", 
-            task
-          );
-        }
-      } catch (error) {
-        console.warn("Failed to notify Lumi about task deletion:", error);
-      }
-    }
-    
     const result = await this.taskRepository.delete(id);
     return result.affected != null && result.affected > 0;
   }
@@ -132,21 +80,7 @@ export class TaskService {
 
     task.status = TaskStatus.COMPLETED;
     task.completedAt = new Date();
-
     const completedTask = await this.taskRepository.save(task);
-    
-    // Notificar Lumi sobre a conclusão da tarefa
-    try {
-      if (task.user?.id) {
-        await this.lumiService.recordTaskAction(
-          task.user.id, 
-          "completed", 
-          completedTask
-        );
-      }
-    } catch (error) {
-      console.warn("Failed to notify Lumi about task completion:", error);
-    }
 
     return completedTask;
   }
@@ -159,21 +93,7 @@ export class TaskService {
 
     task.status = TaskStatus.PENDING;
     task.completedAt = null;
-
     const incompleteTask = await this.taskRepository.save(task);
-    
-    // Notificar Lumi sobre a marcação como incompleta
-    try {
-      if (task.user?.id) {
-        await this.lumiService.recordTaskAction(
-          task.user.id, 
-          "marked_incomplete", 
-          incompleteTask
-        );
-      }
-    } catch (error) {
-      console.warn("Failed to notify Lumi about task marked as incomplete:", error);
-    }
 
     return incompleteTask;
   }
