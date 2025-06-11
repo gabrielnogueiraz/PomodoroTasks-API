@@ -4,19 +4,16 @@ import { Task } from "../entities/Task";
 import { Repository } from "typeorm";
 import { TaskService } from "./TaskService";
 import { FlowerService } from "./FlowerService";
-import { LumiService } from "./LumiService";
 
 export class PomodoroService {
   private pomodoroRepository: Repository<Pomodoro>;
   private taskService: TaskService;
   private flowerService: FlowerService;
-  private lumiService: LumiService;
 
   constructor() {
     this.pomodoroRepository = AppDataSource.getRepository(Pomodoro);
     this.taskService = new TaskService();
     this.flowerService = new FlowerService();
-    this.lumiService = new LumiService();
   }
 
   async findAll(): Promise<Pomodoro[]> {
@@ -110,29 +107,12 @@ export class PomodoroService {
         const flower = await this.flowerService.createFlowerForPomodoroCompletion(
           userId,
           pomodoro.task.id
-        );
-        
-        if (flower) {
+        );        if (flower) {
           console.log(`✅ Flor criada com sucesso: ${flower.id} (${flower.color} ${flower.type})`);
-          
-          // Notificar Lumi sobre a flor conquistada
-          try {
-            await this.lumiService.recordFlowerEarned(userId, flower);
-          } catch (error) {
-            console.warn("Failed to notify Lumi about flower earned:", error);
-          }
         } else {
           console.log(`❌ Não foi possível criar a flor`);
-        }
-      } catch (error) {
+        }      } catch (error) {
         console.error('❌ Erro ao criar flor para pomodoro:', error);
-      }
-
-      // Notificar Lumi sobre o pomodoro completado
-      try {
-        await this.lumiService.recordPomodoroCompleted(userId, pomodoro.task.title);
-      } catch (error) {
-        console.warn("Failed to notify Lumi about pomodoro completion:", error);
       }
     } else {
       console.log(`⚠️ Pomodoro ${id} não tem tarefa associada`);
@@ -157,17 +137,7 @@ export class PomodoroService {
       pomodoro.notes = pomodoro.notes 
         ? `${pomodoro.notes}\n${notes}` 
         : notes;
-    }
-    
-    const savedPomodoro = await this.pomodoroRepository.save(pomodoro);
-    
-    // Notificar Lumi sobre a interrupção
-    try {
-      const taskTitle = pomodoro.task?.title || "Tarefa desconhecida";
-      await this.lumiService.recordPomodoroInterrupted(userId, taskTitle, notes);
-    } catch (error) {
-      console.warn("Failed to notify Lumi about pomodoro interruption:", error);
-    }
+    }    const savedPomodoro = await this.pomodoroRepository.save(pomodoro);
     
     return savedPomodoro;
   }
