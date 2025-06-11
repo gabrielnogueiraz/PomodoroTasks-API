@@ -4,61 +4,65 @@ import { Garden } from "../entities/Garden";
 import { Task, TaskPriority } from "../entities/Task";
 import { User } from "../entities/User";
 import { Repository } from "typeorm";
-import { LumiService } from "./LumiService";
 
 export class FlowerService {
   private flowerRepository: Repository<Flower>;
   private gardenRepository: Repository<Garden>;
-  private lumiService: LumiService;
 
   constructor() {
     this.flowerRepository = AppDataSource.getRepository(Flower);
     this.gardenRepository = AppDataSource.getRepository(Garden);
-    this.lumiService = new LumiService();
-  }async createFlowerForPomodoroCompletion(
+  }
+  async createFlowerForPomodoroCompletion(
     userId: string,
     taskId: string
   ): Promise<Flower | null> {
     try {
-      console.log(`🌱 Iniciando criação de flor - Usuário: ${userId}, Tarefa: ${taskId}`);
-      
-      const recentDate = new Date(Date.now() - 30000); 
+      console.log(
+        `🌱 Iniciando criação de flor - Usuário: ${userId}, Tarefa: ${taskId}`
+      );
+
+      const recentDate = new Date(Date.now() - 30000);
       const existingFlower = await this.flowerRepository.findOne({
         where: {
           user: { id: userId },
           task: { id: taskId },
         },
-        order: { createdAt: "DESC" }
+        order: { createdAt: "DESC" },
       });
-      
+
       if (existingFlower && existingFlower.createdAt > recentDate) {
-        console.log(`⚠️ Flor já existe para esta tarefa criada em ${existingFlower.createdAt.toISOString()}, evitando duplicação`);
+        console.log(
+          `⚠️ Flor já existe para esta tarefa criada em ${existingFlower.createdAt.toISOString()}, evitando duplicação`
+        );
         return existingFlower;
       }
-      
+
       const taskRepository = AppDataSource.getRepository(Task);
       const task = await taskRepository.findOne({
-        where: { id: taskId }
+        where: { id: taskId },
       });
-      
+
       if (!task) {
-        console.log('❌ Tarefa não encontrada com ID:', taskId);
+        console.log("❌ Tarefa não encontrada com ID:", taskId);
         return null;
       }
-      
-      console.log(`📋 Criando flor para tarefa ${taskId} de título "${task.title}"`);
-      
+
+      console.log(
+        `📋 Criando flor para tarefa ${taskId} de título "${task.title}"`
+      );
+
       if (!task.user) {
         console.log(`🔗 Associando tarefa ${taskId} ao usuário ${userId}`);
         task.user = { id: userId } as User;
         await taskRepository.save(task);
       }
-      
+
       const userRepository = AppDataSource.getRepository(User);
       const user = await userRepository.findOne({
-        where: { id: userId }
+        where: { id: userId },
       });
-      
+
       if (!user) {
         console.log(`❌ Usuário ${userId} não encontrado`);
         return null;
@@ -66,10 +70,12 @@ export class FlowerService {
 
       const garden = await this.getOrCreateGarden(userId);
       const flowerColor = this.getFlowerColorByPriority(task.priority);
-      
+
       if (task.priority === TaskPriority.HIGH) {
         garden.consecutiveHighPriorityPomodoros += 1;
-        console.log(`🔥 Pomodoro de alta prioridade! Consecutivos: ${garden.consecutiveHighPriorityPomodoros}`);
+        console.log(
+          `🔥 Pomodoro de alta prioridade! Consecutivos: ${garden.consecutiveHighPriorityPomodoros}`
+        );
       } else {
         garden.consecutiveHighPriorityPomodoros = 0;
       }
@@ -77,8 +83,14 @@ export class FlowerService {
       let flowerType = FlowerType.COMMON;
       let finalColor = flowerColor;
 
-      const shouldCreateRareFlower = await this.checkForRareFlower(userId, flowerColor);
-      if (shouldCreateRareFlower || garden.consecutiveHighPriorityPomodoros >= 3) {
+      const shouldCreateRareFlower = await this.checkForRareFlower(
+        userId,
+        flowerColor
+      );
+      if (
+        shouldCreateRareFlower ||
+        garden.consecutiveHighPriorityPomodoros >= 3
+      ) {
         flowerType = FlowerType.RARE;
         finalColor = FlowerColor.PURPLE;
         garden.consecutiveHighPriorityPomodoros = 0;
@@ -100,28 +112,17 @@ export class FlowerService {
         earnedFromTaskTitle: task.title,
         user: { id: userId } as User,
         task: { id: taskId } as Task,
-      });      const savedFlower = await this.flowerRepository.save(flower);
-      console.log(`✅ Flor criada com sucesso: ID ${savedFlower.id}, Cor: ${savedFlower.color}, Tipo: ${savedFlower.type}`);
-      
-      // Notificar Lumi sobre a criação da flor
-      try {
-        if (savedFlower.type === FlowerType.RARE) {
-          // Notificação especial para flores raras
-          await this.lumiService.recordFlowerEarned(userId, {
-            ...savedFlower,
-            isRare: true,
-            specialMessage: "Parabéns! Você conquistou uma flor rara!"
-          });
-        } else {
-          await this.lumiService.recordFlowerEarned(userId, savedFlower);
-        }
-      } catch (error) {
-        console.warn("Failed to notify Lumi about flower creation:", error);
-      }
-      
+      });
+      const savedFlower = await this.flowerRepository.save(flower);
+      console.log(
+        `✅ Flor criada com sucesso: ID ${savedFlower.id}, Cor: ${savedFlower.color}, Tipo: ${savedFlower.type}`
+      );
+
+      return savedFlower;
+
       return savedFlower;
     } catch (error) {
-      console.error('❌ Erro ao criar flor para pomodoro:', error);
+      console.error("❌ Erro ao criar flor para pomodoro:", error);
       throw error;
     }
   }
@@ -132,8 +133,10 @@ export class FlowerService {
       .where("flower.user.id = :userId", { userId })
       .orderBy("flower.createdAt", "DESC")
       .getMany();
-    
-    console.log(`Encontradas ${flowers.length} flores para o usuário ${userId}`);
+
+    console.log(
+      `Encontradas ${flowers.length} flores para o usuário ${userId}`
+    );
     return flowers;
   }
   async getUserGarden(userId: string): Promise<Garden> {
@@ -149,19 +152,23 @@ export class FlowerService {
     const stats = {
       totalFlowers: flowers.length,
       flowersByType: {
-        GREEN: flowers.filter(f => f.color === FlowerColor.GREEN).length,
-        ORANGE: flowers.filter(f => f.color === FlowerColor.ORANGE).length,
-        RED: flowers.filter(f => f.color === FlowerColor.RED).length,
-        PURPLE: flowers.filter(f => f.color === FlowerColor.PURPLE).length,
+        GREEN: flowers.filter((f) => f.color === FlowerColor.GREEN).length,
+        ORANGE: flowers.filter((f) => f.color === FlowerColor.ORANGE).length,
+        RED: flowers.filter((f) => f.color === FlowerColor.RED).length,
+        PURPLE: flowers.filter((f) => f.color === FlowerColor.PURPLE).length,
       },
-      rareFlowersCount: flowers.filter(f => f.type === FlowerType.RARE).length,
+      rareFlowersCount: flowers.filter((f) => f.type === FlowerType.RARE)
+        .length,
       totalPomodorosCompleted: flowers.length,
       consecutiveHighPriority: this.calculateConsecutiveHighPriority(flowers),
     };
 
     return stats;
   }
-  async checkForRareFlower(userId: string, flowerColor: FlowerColor): Promise<boolean> {
+  async checkForRareFlower(
+    userId: string,
+    flowerColor: FlowerColor
+  ): Promise<boolean> {
     try {
       const recentFlowers = await this.flowerRepository.find({
         where: { user: { id: userId } },
@@ -171,17 +178,20 @@ export class FlowerService {
 
       if (flowerColor === FlowerColor.RED && recentFlowers.length >= 3) {
         const lastThree = recentFlowers.slice(0, 3);
-        if (lastThree.every(f => f.color === FlowerColor.RED)) {
+        if (lastThree.every((f) => f.color === FlowerColor.RED)) {
           return true;
         }
       }
 
       const today = new Date();
       today.setHours(0, 0, 0, 0);
-      
-      const flowersToday = await this.flowerRepository.createQueryBuilder("flower")
+
+      const flowersToday = await this.flowerRepository
+        .createQueryBuilder("flower")
         .where("flower.userId = :userId", { userId })
-        .andWhere("DATE(flower.createdAt) = DATE(:today)", { today: today.toISOString().split('T')[0] })
+        .andWhere("DATE(flower.createdAt) = DATE(:today)", {
+          today: today.toISOString().split("T")[0],
+        })
         .getCount();
 
       if (flowersToday === 0) {
@@ -190,7 +200,7 @@ export class FlowerService {
 
       return false;
     } catch (error) {
-      console.error('Erro ao verificar flor rara:', error);
+      console.error("Erro ao verificar flor rara:", error);
       return false;
     }
   }
