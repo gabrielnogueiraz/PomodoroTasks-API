@@ -21,11 +21,27 @@ export const authMiddleware = (
 
   const token = authHeader.replace("Bearer ", "");
 
+  if (!token || token === "Bearer") {
+    res.status(401).json({ message: "Token inválido" });
+    return;
+  }
+
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || "secret") as TokenPayload;
+    const secret = process.env.JWT_SECRET;
+    if (!secret) {
+      throw new Error("JWT_SECRET não configurado");
+    }
+
+    const decoded = jwt.verify(token, secret) as TokenPayload;
     req.user = decoded;
     next();
   } catch (error) {
-    res.status(401).json({ message: "Token inválido" });
+    if (error instanceof jwt.TokenExpiredError) {
+      res.status(401).json({ message: "Token expirado" });
+    } else if (error instanceof jwt.JsonWebTokenError) {
+      res.status(401).json({ message: "Token inválido" });
+    } else {
+      res.status(500).json({ message: "Erro interno do servidor" });
+    }
   }
 };
