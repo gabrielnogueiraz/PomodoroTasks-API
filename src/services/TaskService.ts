@@ -8,10 +8,10 @@ export class TaskService {
   constructor() {
     this.taskRepository = AppDataSource.getRepository(Task);
   }
-
   async findAll(): Promise<Task[]> {
     return this.taskRepository.find({
       relations: ["pomodoros"],
+      select: ["id", "title", "description", "status", "priority", "estimatedPomodoros", "completedPomodoros", "createdAt", "updatedAt"],
       order: { createdAt: "DESC" },
     });
   }
@@ -27,6 +27,7 @@ export class TaskService {
     return this.taskRepository.find({
       where: { status },
       relations: ["pomodoros"],
+      select: ["id", "title", "description", "status", "priority", "estimatedPomodoros", "completedPomodoros", "createdAt", "updatedAt"],
       order: { createdAt: "DESC" },
     });
   }
@@ -48,10 +49,33 @@ export class TaskService {
     const updatedTask = await this.taskRepository.save(task);
 
     return updatedTask;
-  }
-  async delete(id: string): Promise<boolean> {
-    const result = await this.taskRepository.delete(id);
-    return result.affected != null && result.affected > 0;
+  }  async delete(id: string): Promise<boolean> {
+    // Buscar a tarefa com seus relacionamentos
+    const task = await this.taskRepository.findOne({
+      where: { id },
+      relations: ["pomodoros", "flowers"]
+    });
+
+    if (!task) {
+      return false;
+    }
+
+    // Usar transaction para garantir consistência
+    return await this.taskRepository.manager.transaction(async (manager) => {
+      // Deletar pomodoros relacionados primeiro
+      if (task.pomodoros && task.pomodoros.length > 0) {
+        await manager.delete("Pomodoro", { task: { id } });
+      }
+
+      // Deletar flores relacionadas
+      if (task.flowers && task.flowers.length > 0) {
+        await manager.delete("Flower", { task: { id } });
+      }
+
+      // Por fim, deletar a tarefa
+      const result = await manager.delete("Task", id);
+      return result.affected != null && result.affected > 0;
+    });
   }
 
   async updateStatus(id: string, status: TaskStatus): Promise<Task | null> {
