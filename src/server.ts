@@ -1,5 +1,6 @@
 import { initializeDatabase } from "./data-source";
 import { app } from "./app";
+import { logger } from "./utils/logger";
 import * as dotenv from "dotenv";
 
 dotenv.config();
@@ -10,14 +11,14 @@ const PORT = process.env.PORT || 8080;
 
 initializeDatabase()
   .then(() => {
-    console.log("Database initialized successfully!");
+    logger.database("Database initialized successfully!");
 
     app.listen(PORT, () => {
-      console.log(`Server is running on port ${PORT}`);
-      console.log(`Using database: ${process.env.DATABASE_TYPE || "postgres"}`);
+      logger.info(`Server is running on port ${PORT}`, "SERVER");
+      logger.info(`Using database: ${process.env.DATABASE_TYPE || "postgres"}`, "SERVER");
     });
   })
   .catch((err) => {
-    console.error("Error during database initialization:", err);
+    logger.error("Error during database initialization", "SERVER", err);
     process.exit(1);
   });
