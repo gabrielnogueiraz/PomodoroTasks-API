@@ -4,6 +4,7 @@ import { Task } from "../entities/Task";
 import { Repository } from "typeorm";
 import { TaskService } from "./TaskService";
 import { FlowerService } from "./FlowerService";
+import { logger } from "../utils/logger";
 
 export class PomodoroService {
   private pomodoroRepository: Repository<Pomodoro>;
@@ -67,55 +68,46 @@ export class PomodoroService {
     
     return this.pomodoroRepository.save(pomodoro);
   }  async complete(id: string, userId: string): Promise<Pomodoro | null> {
-    console.log(`Iniciando conclusão do pomodoro ${id} para usuário ${userId}`);
-    
     const pomodoro = await this.pomodoroRepository.findOne({
       where: { id },
       relations: ["task"]
     });
     
     if (!pomodoro) {
-      console.log(`Pomodoro ${id} não encontrado`);
       return null;
     }
     
     if (pomodoro.status === PomodoroStatus.COMPLETED) {
-      console.log(`Pomodoro ${id} já está completo, não criando flor duplicada`);
       return pomodoro;
     }
 
     if (pomodoro.status !== PomodoroStatus.IN_PROGRESS) {
-      console.log(`Pomodoro ${id} não está em progresso (status: ${pomodoro.status})`);
       throw new Error('Pomodoro não está em progresso');
     }
     
-    console.log(`Marcando pomodoro ${id} como completo`);
     pomodoro.endTime = new Date();
     pomodoro.status = PomodoroStatus.COMPLETED;
     
     const savedPomodoro = await this.pomodoroRepository.save(pomodoro);
-    console.log(`Pomodoro ${id} salvo como completo`);
-      if (pomodoro.task) {
-      console.log(`Atualizando contador de pomodoros completados para tarefa ${pomodoro.task.id}`);
+    
+    if (pomodoro.task) {
       await this.taskService.updateCompletedPomodoros(
         pomodoro.task.id, 
         (pomodoro.task.completedPomodoros || 0) + 1
       );
 
       try {
-        console.log(`Criando flor para pomodoro completado - Usuário: ${userId}, Tarefa: ${pomodoro.task.id}`);
-        const flower = await this.flowerService.createFlowerForPomodoroCompletion(
+        await this.flowerService.createFlowerForPomodoroCompletion(
           userId,
           pomodoro.task.id
-        );        if (flower) {
-          console.log(`✅ Flor criada com sucesso: ${flower.id} (${flower.color} ${flower.type})`);
+        );
+      } catch (error) {        // Log apenas erros críticos em produção
+        if (process.env.NODE_ENV === 'production') {
+          logger.error(`Erro ao criar flor para pomodoro ${id}:`, error);
         } else {
-          console.log(`❌ Não foi possível criar a flor`);
-        }      } catch (error) {
-        console.error('❌ Erro ao criar flor para pomodoro:', error);
+          logger.error('❌ Erro ao criar flor para pomodoro:', error);
+        }
       }
-    } else {
-      console.log(`⚠️ Pomodoro ${id} não tem tarefa associada`);
     }
     
     return savedPomodoro;
