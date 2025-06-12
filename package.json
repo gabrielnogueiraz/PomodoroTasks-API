@@ -1,24 +1,35 @@
 {
   "name": "pomodorotasks-backend",
   "version": "1.0.0",
-  "main": "dist/server.js",  "scripts": {
+  "description": "",
+  "main": "dist/server.js",
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
+  },
+  "scripts": {
     "start": "node dist/server.js",
     "dev": "ts-node-dev --transpile-only --ignore-watch node_modules src/server.ts",
     "build": "tsc",
     "build:render": "npm ci --include=dev && tsc",
+    "build:production": "npm ci --only=production && tsc",
+    "postbuild": "echo 'Build completed successfully! Ready for production deployment.'",
     "typeorm": "typeorm-ts-node-commonjs",
     "migration:create": "typeorm migration:create",
     "migration:run": "npm run typeorm migration:run -- -d src/data-source.ts",
-    "migration:revert": "npm run typeorm migration:revert -- -d src/data-source.ts",    "db:setup": "ts-node scripts/setup-db.ts",
+    "migration:revert": "npm run typeorm migration:revert -- -d src/data-source.ts",
+    "db:setup": "ts-node scripts/setup-db.ts",
     "db:reset": "ts-node scripts/reset-db.ts",
-    "db:migrate": "ts-node scripts/migrate-data.ts",    "config:validate": "ts-node scripts/validate-config.ts",
+    "db:migrate": "ts-node scripts/migrate-data.ts",
+    "config:validate": "ts-node scripts/validate-config.ts",
+    "production:validate": "ts-node scripts/validate-production.ts",
     "test": "jest",
-    "test:lumi": "ts-node scripts/test-lumi-integration.ts"
+    "test:lumi": "ts-node scripts/test-lumi-integration.ts",
+    "health:check": "curl -f http://localhost:8080/health || exit 1"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "description": "",
   "dependencies": {
     "@types/bcryptjs": "^2.4.6",
     "@types/jsonwebtoken": "^9.0.9",
@@ -32,7 +43,6 @@
     "jsonwebtoken": "^9.0.2",
     "pg": "^8.16.0",
     "reflect-metadata": "^0.2.2",
-    "sqlite3": "^5.1.7",
     "ts-node": "^10.9.2",
     "typeorm": "^0.3.21",
     "typescript": "^5.8.2"
