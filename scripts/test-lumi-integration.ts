@@ -17,21 +17,25 @@ async function testLumiIntegration() {
     const lumiService = new LumiService();
     const userService = new UserService();
     const taskService = new TaskService();
+      // Test 1: Get or create test user
+    console.log("\n📋 Teste 1: Obtendo/criando usuário de teste...");
     
-    // Test 1: Create test user
-    console.log("\n📋 Teste 1: Criação de usuário de teste...");
-    
-    const testUser = await userService.create({
-      name: "Lumi Test User",
-      email: "lumi.test@example.com",
-      password: "testpassword123"
-    });
+    let testUser = await userService.findByEmail("lumi.test@example.com");
     
     if (!testUser) {
-      throw new Error("Falha ao criar usuário de teste");
+      testUser = await userService.create({
+        name: "Lumi Test User",
+        email: "lumi.test@example.com", 
+        password: "testpassword123"
+      });
+      
+      if (!testUser) {
+        throw new Error("Falha ao criar usuário de teste");
+      }
+      console.log(`✅ Usuário criado: ${testUser.name} (${testUser.id})`);
+    } else {
+      console.log(`✅ Usuário existente encontrado: ${testUser.name} (${testUser.id})`);
     }
-    
-    console.log(`✅ Usuário criado: ${testUser.name} (${testUser.id})`);
     
     // Test 2: Create Lumi memory
     console.log("\n🧠 Teste 2: Criação de memória Lumi...");
