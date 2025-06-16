@@ -35,9 +35,21 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 // Health check endpoint
 app.get('/health', (req, res) => {
   res.status(200).json({
-    status: 'OK',
+    status: 'healthy',
     timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV || 'development'
+    environment: process.env.NODE_ENV || 'development',
+    version: '1.0.0',
+    uptime: process.uptime(),
+    memory: process.memoryUsage()
+  });
+});
+
+// Additional health check for Railway
+app.get('/', (req, res) => {
+  res.status(200).json({
+    message: 'Toivo API is running successfully!',
+    status: 'healthy',
+    timestamp: new Date().toISOString()
   });
 });
 
