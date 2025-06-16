@@ -24,12 +24,45 @@ export interface LumiContextData {
       earnedAt: Date;
       taskTitle?: string;
     }>;
-  };
-  statistics: {
+  };  statistics: {
     totalTasksCompleted: number;
     currentStreak: number;
+    longestStreak: number;
+    totalActiveDays: number;
+    isActiveToday: boolean;
     averageCompletionRate: number;
     mostProductiveTimeOfDay: string;
+    weeklyStats: {
+      tasksCompleted: number;
+      pomodorosCompleted: number;
+      focusTime: number;
+      productivityScore: number;
+    };
+    bestPerformanceDays: number;
+    mostProductiveHours: Array<{
+      hour: number;
+      activityLevel: number;
+    }>;
+  };
+  goals: {
+    active: Array<{
+      id: string;
+      title: string;
+      category: string;
+      targetValue: number;
+      currentValue: number;
+      endDate: Date;
+    }>;
+    completed: Array<{
+      id: string;
+      title: string;
+      completedAt: Date;
+    }>;
+    nearCompletion: Array<{
+      id: string;
+      title: string;
+      progress: number;
+    }>;
   };
   conversationHistory: Array<{
     timestamp: Date;
