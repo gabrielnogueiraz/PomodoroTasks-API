@@ -1,6 +1,35 @@
 # 🚀 DEPLOY NO RAILWAY - GUIA COMPLETO
 
-## 🚨 SOLUÇÃO PARA "Waiting for build to start..."
+## 🚨 SOLUÇÃO PARA ERROS DE BUILD
+
+### ❌ Erro: "EBUSY: resource busy or locked, rmdir '/app/node_modules/.cache'"
+
+Este erro acontece quando há conflito de cache no nixpacks. **Solução:**
+
+1. **Limpe o cache do projeto no Railway:**
+   - Vá para o painel do Railway
+   - Clique em "Settings" → "Danger"
+   - Clique em "Clear Build Cache"
+
+2. **Force um rebuild limpo:**
+```bash
+git add .
+git commit -m "fix: resolve cache conflicts for Railway build"
+git push origin main
+```
+
+3. **Se o problema persistir, adicione estas variáveis de ambiente no Railway:**
+```
+NPM_CONFIG_CACHE=/tmp
+NODE_ENV=production
+```
+
+4. **Alternativa - Delete e recrie o serviço:**
+   - No Railway, vá em Settings → Danger
+   - Delete o serviço atual
+   - Crie um novo serviço conectando ao mesmo repositório
+
+### ❌ Erro: "Waiting for build to start..."
 
 Se você estiver vendo "Waiting for build to start..." no console do Railway, siga estes passos:
 
@@ -169,16 +198,34 @@ GET /health
 
 ## 🐛 TROUBLESHOOTING
 
-### Problema: "Port already in use"
+### Build Issues
+
+#### Problema: "EBUSY: resource busy or locked, rmdir '/app/node_modules/.cache'"
+**Causa:** Conflito de cache do nixpacks no Railway
+**Solução:** 
+1. Clear Build Cache no Railway (Settings → Danger)
+2. Force novo commit: `git commit --allow-empty -m "force rebuild" && git push`
+3. Se persistir, delete e recrie o serviço
+
+#### Problema: "npm ci && npm run build did not complete successfully: exit code: 240"
+**Causa:** Erro de build relacionado ao cache npm
+**Solução:** 
+1. Adicione variável `NPM_CONFIG_CACHE=/tmp` no Railway
+2. Verifique se todas as dependências estão no package.json
+3. Teste build local: `npm ci && npm run build`
+
+### Runtime Issues
+
+#### Problema: "Port already in use"
 **Solução:** Railway define PORT automaticamente, não defina manualmente.
 
-### Problema: "Database connection failed"
+#### Problema: "Database connection failed"
 **Solução:** Verifique se o PostgreSQL foi adicionado ao projeto Railway.
 
-### Problema: "JWT errors"
+#### Problema: "JWT errors"
 **Solução:** Defina `JWT_SECRET` com pelo menos 32 caracteres.
 
-### Problema: "CORS errors"
+#### Problema: "CORS errors"
 **Solução:** Configure `FRONTEND_URL` com a URL real do frontend.
 
 ## 📊 CHECKLIST DE DEPLOY
