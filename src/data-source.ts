@@ -23,7 +23,7 @@ const createDataSource = () => {
       entities: [Task, Pomodoro, User, Flower, Garden, LumiMemory],
       migrations: [],
       subscribers: [],
-      ssl: { rejectUnauthorized: false }, // Required for Railway PostgreSQL
+      ssl: { rejectUnauthorized: false }, 
     });
   }
   
