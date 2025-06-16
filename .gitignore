@@ -35,3 +35,12 @@ Thumbs.db
 # Temporary files
 tmp/
 temp/
+
+# Railway specific
+.railway/
+
+# Build artifacts (apenas se não funcionar no Railway)
+# dist/
+
+# Coverage reports
+coverage/
