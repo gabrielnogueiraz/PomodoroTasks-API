@@ -1,12 +1,22 @@
 import { AppDataSource } from "../data-source";
 import { Task, TaskPriority, TaskStatus } from "../entities/Task";
-import { Repository } from "typeorm";
+import { Repository, Between } from "typeorm";
+import { StreakService } from "./StreakService";
+import { AnalyticsService } from "./AnalyticsService";
+import { GoalService } from "./GoalService";
+import { GoalCategory } from "../entities/Goal";
 
 export class TaskService {
   private taskRepository: Repository<Task>;
+  private streakService: StreakService;
+  private analyticsService: AnalyticsService;
+  private goalService: GoalService;
 
   constructor() {
     this.taskRepository = AppDataSource.getRepository(Task);
+    this.streakService = new StreakService();
+    this.analyticsService = new AnalyticsService();
+    this.goalService = new GoalService();
   }
   async findAll(): Promise<Task[]> {
     return this.taskRepository.find({
@@ -94,8 +104,7 @@ export class TaskService {
     }
 
     return this.taskRepository.save(task);
-  }
-  async markAsCompleted(id: string): Promise<Task | null> {
+  }  async markAsCompleted(id: string): Promise<Task | null> {
     const task = await this.findById(id);
 
     if (!task) {
@@ -105,6 +114,14 @@ export class TaskService {
     task.status = TaskStatus.COMPLETED;
     task.completedAt = new Date();
     const completedTask = await this.taskRepository.save(task);
+
+    if (completedTask.user) {
+      const userId = typeof completedTask.user === 'string' ? completedTask.user : completedTask.user.id;
+      
+      await this.streakService.updateStreak(userId);
+      await this.analyticsService.updateDailyPerformance(userId, new Date());
+      await this.updateTaskGoals(userId);
+    }
 
     return completedTask;
   }
@@ -134,5 +151,28 @@ export class TaskService {
 
     task.completedPomodoros = completedPomodoros;
     return this.taskRepository.save(task);
+  }
+
+  private async updateTaskGoals(userId: string): Promise<void> {
+    try {
+      const activeGoals = await this.goalService.getUserGoals(userId);
+      const taskGoals = activeGoals.filter(goal => goal.category === GoalCategory.TASKS_COMPLETED);
+
+      for (const goal of taskGoals) {
+        const currentValue = await this.getTasksCompletedInPeriod(userId, goal.startDate, goal.endDate);
+        await this.goalService.updateGoalProgress(goal.id, currentValue);
+      }
+    } catch (error) {
+      console.error("Erro ao atualizar metas de tarefas:", error);
+    }
+  }
+  private async getTasksCompletedInPeriod(userId: string, startDate: Date, endDate: Date): Promise<number> {
+    return await this.taskRepository.count({
+      where: {
+        user: { id: userId },
+        status: TaskStatus.COMPLETED,
+        completedAt: Between(startDate, endDate)
+      }
+    });
   }
 }
