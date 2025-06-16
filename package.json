@@ -23,7 +23,6 @@
     "db:migrate": "ts-node scripts/migrate-data.ts",
     "config:validate": "ts-node scripts/validate-config.ts",    "production:validate": "ts-node scripts/validate-production.ts",    "railway:check": "node scripts/railway-check.js",
     "railway:health": "node scripts/railway-health.js",
-    "railway:db-setup": "node scripts/railway-db-setup.js",
     "test": "jest",
     "test:lumi": "ts-node scripts/test-lumi-integration.ts",
     "health:check": "curl -f http://localhost:8080/health || exit 1"
