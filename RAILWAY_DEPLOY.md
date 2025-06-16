@@ -2,6 +2,28 @@
 
 ## 🚨 SOLUÇÃO PARA ERROS DE BUILD
 
+### ❌ Erro: "Error: connect ECONNREFUSED ::1:5432"
+
+Este erro acontece quando o banco PostgreSQL não está configurado no Railway. **Solução:**
+
+1. **IMPORTANTE: Adicione PostgreSQL ao projeto Railway:**
+   - No dashboard do Railway, clique em "Add Service"
+   - Selecione "Database" → "PostgreSQL"  
+   - Aguarde a criação (pode levar 1-2 minutos)
+
+2. **Verifique as variáveis de ambiente:**
+   - Vá em Variables do seu serviço backend
+   - Deve aparecer automaticamente: `DATABASE_URL`
+   - Se não aparecer, copie da aba Variables do PostgreSQL
+
+3. **Force um redeploy:**
+   ```bash
+   git commit --allow-empty -m "trigger redeploy after adding postgresql"
+   git push origin main
+   ```
+
+**⚠️ CRÍTICO:** O PostgreSQL deve estar no mesmo projeto Railway que o backend!
+
 ### ❌ Erro: "EBUSY: resource busy or locked, rmdir '/app/node_modules/.cache'"
 
 Este erro acontece quando há conflito de cache no nixpacks. **Solução:**
@@ -84,11 +106,23 @@ Os seguintes arquivos foram criados/atualizados para garantir que o Railway dete
 4. Selecione "Deploy from GitHub repo"
 5. Conecte seu repositório GitHub
 
-### 2. Adicionar Banco PostgreSQL
+### 2. Adicionar Banco PostgreSQL (OBRIGATÓRIO)
 
-1. No dashboard do projeto, clique em "Add Service"
-2. Selecione "Database" > "PostgreSQL"
-3. Railway criará automaticamente as variáveis de ambiente
+**⚠️ IMPORTANTE:** Este passo é CRÍTICO para o funcionamento!
+
+1. No dashboard do projeto Railway, clique em "Add Service"
+2. Selecione "Database" → "PostgreSQL"  
+3. Aguarde a criação (1-2 minutos)
+4. **Verifique que `DATABASE_URL` apareceu nas variáveis**
+5. Se não aparecer automaticamente:
+   - Vá na aba Variables do PostgreSQL
+   - Copie o valor de `DATABASE_URL`
+   - Cole nas Variables do seu serviço backend
+
+**✅ Verificação:** Nas Variables do backend deve aparecer:
+```
+DATABASE_URL=postgresql://postgres:senha@host:port/database
+```
 
 ### 3. Configurar Variáveis de Ambiente
 
@@ -230,10 +264,17 @@ GET /health
 
 ## 📊 CHECKLIST DE DEPLOY
 
-- [ ] Repositório GitHub atualizado
+### 🔴 CRÍTICO (obrigatório):
+- [ ] **PostgreSQL adicionado ao projeto Railway**
+- [ ] **`DATABASE_URL` visível nas variáveis do backend**
+- [ ] **Repositório GitHub atualizado**
+
+### 🟡 IMPORTANTE (recomendado):
 - [ ] Variáveis de ambiente configuradas no Railway
-- [ ] PostgreSQL adicionado ao projeto
 - [ ] `JWT_SECRET` definido (32+ caracteres)
+- [ ] `NODE_ENV=production` configurado
+
+### 🟢 OPCIONAL (melhorias):
 - [ ] `FRONTEND_URL` configurado
 - [ ] Build executado com sucesso
 - [ ] Health check respondendo
