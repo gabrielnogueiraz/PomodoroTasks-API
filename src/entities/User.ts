@@ -3,6 +3,9 @@ import { Task } from "./Task";
 import { Flower } from "./Flower";
 import { Garden } from "./Garden";
 import { LumiMemory } from "./LumiMemory";
+import { Goal } from "./Goal";
+import { PerformanceRecord } from "./PerformanceRecord";
+import { Streak } from "./Streak";
 
 @Entity()
 export class User {
@@ -25,9 +28,17 @@ export class User {
   flowers: Flower[];
   @OneToOne(() => Garden, garden => garden.user)
   garden: Garden;
-
   @OneToOne(() => LumiMemory, lumiMemory => lumiMemory.user)
   lumiMemory: LumiMemory;
+
+  @OneToMany(() => Goal, goal => goal.user)
+  goals: Goal[];
+
+  @OneToMany(() => PerformanceRecord, performanceRecord => performanceRecord.user)
+  performanceRecords: PerformanceRecord[];
+
+  @OneToOne(() => Streak, streak => streak.user)
+  streak: Streak;
 
   @CreateDateColumn()
   createdAt: Date;
