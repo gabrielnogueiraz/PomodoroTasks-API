@@ -6,6 +6,9 @@ import { User } from "./entities/User";
 import { Flower } from "./entities/Flower";
 import { Garden } from "./entities/Garden";
 import { LumiMemory } from "./entities/LumiMemory";
+import { Goal } from "./entities/Goal";
+import { PerformanceRecord } from "./entities/PerformanceRecord";
+import { Streak } from "./entities/Streak";
 import { DatabaseManager } from "./config/database-manager";
 import { logger } from "./utils/logger";
 import * as dotenv from "dotenv";
@@ -20,7 +23,7 @@ const createDataSource = () => {
       url: process.env.DATABASE_URL,
       synchronize: true, 
       logging: true, 
-      entities: [Task, Pomodoro, User, Flower, Garden, LumiMemory],
+      entities: [Task, Pomodoro, User, Flower, Garden, LumiMemory, Goal, PerformanceRecord, Streak],
       migrations: [],
       subscribers: [],
       ssl: { rejectUnauthorized: false }, 
@@ -37,7 +40,7 @@ const createDataSource = () => {
     database: process.env.DATABASE_NAME || "pomodorotasks",
     synchronize: !isProduction,
     logging: process.env.NODE_ENV === "development",
-    entities: [Task, Pomodoro, User, Flower, Garden, LumiMemory],
+    entities: [Task, Pomodoro, User, Flower, Garden, LumiMemory, Goal, PerformanceRecord, Streak],
     migrations: [],
     subscribers: [],
     ssl: false,
