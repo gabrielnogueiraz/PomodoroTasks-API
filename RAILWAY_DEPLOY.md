@@ -1,5 +1,41 @@
 # 🚀 DEPLOY NO RAILWAY - GUIA COMPLETO
 
+## 🚨 SOLUÇÃO PARA "Waiting for build to start..."
+
+Se você estiver vendo "Waiting for build to start..." no console do Railway, siga estes passos:
+
+### ✅ Verificação Rápida (Resolução Imediata)
+
+1. **Verifique se os arquivos foram commitados e enviados para o GitHub:**
+```bash
+git add .
+git commit -m "Add Railway configuration files"
+git push origin main
+```
+
+2. **Força um novo deploy no Railway:**
+   - Vá para o painel do Railway
+   - Clique em "Deployments" 
+   - Clique em "Deploy Latest"
+   - Ou faça um novo commit para forçar rebuild
+
+3. **Verifique as configurações do serviço:**
+   - No Railway, vá em Settings → Environment
+   - Certifique-se que `NODE_ENV=production` está definido
+   - Adicione as variáveis obrigatórias (veja seção abaixo)
+
+### 🔧 Arquivos de Configuração Criados
+
+Os seguintes arquivos foram criados/atualizados para garantir que o Railway detecte o projeto:
+
+- ✅ `railway.json` - Configuração específica do Railway
+- ✅ `nixpacks.toml` - Configuração de build do Nixpacks  
+- ✅ `.nvmrc` - Versão específica do Node.js (18.19.0)
+- ✅ `package.json` - Scripts de build atualizados
+- ✅ `.gitignore` - Atualizado para produção
+
+---
+
 ## 📋 PRÉ-REQUISITOS
 
 ✅ **Projeto preparado para produção com:**
