@@ -14,13 +14,12 @@ dotenv.config();
 
 const createDataSource = () => {
   const isProduction = process.env.NODE_ENV === "production";
-    // Railway/Production: Use DATABASE_URL
+  // Railway/Production: Use DATABASE_URL
   if (process.env.DATABASE_URL) {
-    return new DataSource({
-      type: "postgres",
+    return new DataSource({      type: "postgres",
       url: process.env.DATABASE_URL,
-      synchronize: process.env.DB_SYNC === "true", // Allow sync for initial setup
-      logging: process.env.NODE_ENV === "development",
+      synchronize: true, 
+      logging: true, 
       entities: [Task, Pomodoro, User, Flower, Garden, LumiMemory],
       migrations: [],
       subscribers: [],
@@ -52,8 +51,10 @@ export const initializeDatabase = async (): Promise<void> => {
     // In production with DATABASE_URL, skip database creation check
     if (process.env.DATABASE_URL) {
       logger.database("Using DATABASE_URL for connection");
+      logger.database("Synchronize enabled - tables will be created automatically");
       await AppDataSource.initialize();
       logger.database("Data Source initialized successfully with PostgreSQL (Railway)");
+      logger.database("✅ Tables should now be created in the database");
       return;
     }
     
