@@ -1,20 +1,27 @@
 import { AppDataSource } from "../data-source";
 import { Pomodoro, PomodoroStatus } from "../entities/Pomodoro";
 import { Task } from "../entities/Task";
-import { Repository } from "typeorm";
+import { Repository, Between } from "typeorm";
 import { TaskService } from "./TaskService";
 import { FlowerService } from "./FlowerService";
+import { AnalyticsService } from "./AnalyticsService";
+import { GoalService } from "./GoalService";
+import { GoalCategory } from "../entities/Goal";
 import { logger } from "../utils/logger";
 
 export class PomodoroService {
   private pomodoroRepository: Repository<Pomodoro>;
   private taskService: TaskService;
   private flowerService: FlowerService;
+  private analyticsService: AnalyticsService;
+  private goalService: GoalService;
 
   constructor() {
     this.pomodoroRepository = AppDataSource.getRepository(Pomodoro);
     this.taskService = new TaskService();
     this.flowerService = new FlowerService();
+    this.analyticsService = new AnalyticsService();
+    this.goalService = new GoalService();
   }
 
   async findAll(): Promise<Pomodoro[]> {
@@ -94,14 +101,15 @@ export class PomodoroService {
       await this.taskService.updateCompletedPomodoros(
         pomodoro.task.id, 
         (pomodoro.task.completedPomodoros || 0) + 1
-      );
-
-      try {
+      );      try {
         await this.flowerService.createFlowerForPomodoroCompletion(
           userId,
           pomodoro.task.id
         );
-      } catch (error) {        // Log apenas erros críticos em produção
+
+        await this.analyticsService.updateDailyPerformance(userId, new Date());
+        await this.updatePomodoroGoals(userId);
+      } catch (error) {// Log apenas erros críticos em produção
         if (process.env.NODE_ENV === 'production') {
           logger.error(`Erro ao criar flor para pomodoro ${id}:`, error);
         } else {
@@ -146,5 +154,50 @@ export class PomodoroService {
       : notes;
     
     return this.pomodoroRepository.save(pomodoro);
+  }
+
+  private async updatePomodoroGoals(userId: string): Promise<void> {
+    try {
+      const activeGoals = await this.goalService.getUserGoals(userId);
+      const pomodoroGoals = activeGoals.filter(goal => 
+        goal.category === GoalCategory.POMODOROS_COMPLETED || 
+        goal.category === GoalCategory.FOCUS_TIME
+      );
+
+      for (const goal of pomodoroGoals) {
+        let currentValue = 0;
+        
+        if (goal.category === GoalCategory.POMODOROS_COMPLETED) {
+          currentValue = await this.getPomodorosCompletedInPeriod(userId, goal.startDate, goal.endDate);
+        } else if (goal.category === GoalCategory.FOCUS_TIME) {
+          currentValue = await this.getFocusTimeInPeriod(userId, goal.startDate, goal.endDate);
+        }
+        
+        await this.goalService.updateGoalProgress(goal.id, currentValue);
+      }
+    } catch (error) {
+      console.error("Erro ao atualizar metas de pomodoro:", error);
+    }
+  }
+  private async getPomodorosCompletedInPeriod(userId: string, startDate: Date, endDate: Date): Promise<number> {
+    return await this.pomodoroRepository.count({
+      where: {
+        task: { user: { id: userId } },
+        status: PomodoroStatus.COMPLETED,
+        endTime: Between(startDate, endDate)
+      }
+    });
+  }
+
+  private async getFocusTimeInPeriod(userId: string, startDate: Date, endDate: Date): Promise<number> {
+    const pomodoros = await this.pomodoroRepository.find({
+      where: {
+        task: { user: { id: userId } },
+        status: PomodoroStatus.COMPLETED,
+        endTime: Between(startDate, endDate)
+      }
+    });
+
+    return pomodoros.reduce((total, pomodoro) => total + (pomodoro.duration / 60), 0);
   }
 }
