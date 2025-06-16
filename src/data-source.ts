@@ -14,14 +14,13 @@ dotenv.config();
 
 const createDataSource = () => {
   const isProduction = process.env.NODE_ENV === "production";
-  
-  // Railway/Production: Use DATABASE_URL
+    // Railway/Production: Use DATABASE_URL
   if (process.env.DATABASE_URL) {
     return new DataSource({
       type: "postgres",
       url: process.env.DATABASE_URL,
-      synchronize: false, // Never synchronize in production
-      logging: false,
+      synchronize: process.env.DB_SYNC === "true", // Allow sync for initial setup
+      logging: process.env.NODE_ENV === "development",
       entities: [Task, Pomodoro, User, Flower, Garden, LumiMemory],
       migrations: [],
       subscribers: [],
