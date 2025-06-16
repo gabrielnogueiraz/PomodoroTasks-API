@@ -9,6 +9,9 @@ import { LumiContextData } from "../types/lumi.types";
 import { TaskService } from "./TaskService";
 import { PomodoroService } from "./PomodoroService";
 import { FlowerService } from "./FlowerService";
+import { GoalService } from "./GoalService";
+import { AnalyticsService } from "./AnalyticsService";
+import { StreakService } from "./StreakService";
 import { logger } from "../utils/logger";
 
 // Tipos para as ações do Lumi
@@ -55,6 +58,9 @@ export class LumiService {
   private taskService: TaskService;
   private pomodoroService: PomodoroService;
   private flowerService: FlowerService;
+  private goalService: GoalService;
+  private analyticsService: AnalyticsService;
+  private streakService: StreakService;
 
   constructor() {
     this.lumiMemoryRepository = AppDataSource.getRepository(LumiMemory);
@@ -65,6 +71,9 @@ export class LumiService {
     this.taskService = new TaskService();
     this.pomodoroService = new PomodoroService();
     this.flowerService = new FlowerService();
+    this.goalService = new GoalService();
+    this.analyticsService = new AnalyticsService();
+    this.streakService = new StreakService();
   }
 
   async getOrCreateLumiMemory(userId: string): Promise<LumiMemory> {
@@ -119,13 +128,12 @@ export class LumiService {
     }
 
     return memory;
-  }
-  async getFullUserContext(userId: string): Promise<LumiContextData> {    // Otimização: executar queries em paralelo para melhor performance
-    const [user, recentTasks, recentFlowers, memory] = await Promise.all([
+  }  async getFullUserContext(userId: string): Promise<LumiContextData> {
+    const [user, recentTasks, recentFlowers, memory, streakStats, activeGoals, analytics] = await Promise.all([
       this.userRepository.findOne({
         where: { id: userId },
         relations: ["garden"],
-        select: ["id", "name", "email", "createdAt"] // Selecionar apenas campos necessários
+        select: ["id", "name", "email", "createdAt"]
       }),
       this.taskRepository.find({
         where: { user: { id: userId } },
@@ -139,7 +147,10 @@ export class LumiService {
         order: { createdAt: "DESC" },
         take: 5
       }),
-      this.getOrCreateLumiMemory(userId)
+      this.getOrCreateLumiMemory(userId),
+      this.streakService.getStreakStats(userId),
+      this.goalService.getUserGoals(userId),
+      this.analyticsService.getAnalytics(userId, 7)
     ]);
 
     if (!user) {
@@ -177,9 +188,37 @@ export class LumiService {
       },
       statistics: {
         totalTasksCompleted: completedTasks.length,
-        currentStreak: memory.achievements.currentStreak,
+        currentStreak: streakStats.currentStreak,
+        longestStreak: streakStats.longestStreak,
+        totalActiveDays: streakStats.totalActiveDays,
+        isActiveToday: streakStats.isActiveToday,
         averageCompletionRate: completionRate,
-        mostProductiveTimeOfDay: this.calculateMostProductiveTime(recentTasks)
+        mostProductiveTimeOfDay: this.calculateMostProductiveTime(recentTasks),
+        weeklyStats: analytics.weeklyAverage,
+        bestPerformanceDays: analytics.bestPerformanceDays.length,
+        mostProductiveHours: analytics.mostProductiveHours.slice(0, 3)
+      },      goals: {
+        active: activeGoals.filter(goal => goal.status === 'active').map(goal => ({
+          id: goal.id,
+          title: goal.title,
+          category: goal.category,
+          targetValue: Number(goal.targetValue),
+          currentValue: Number(goal.currentValue),
+          endDate: goal.endDate
+        })),
+        completed: activeGoals.filter(goal => goal.status === 'completed').map(goal => ({
+          id: goal.id,
+          title: goal.title,
+          completedAt: goal.completedAt || new Date()
+        })),
+        nearCompletion: activeGoals.filter(goal => 
+          goal.status === 'active' && 
+          (Number(goal.currentValue) / Number(goal.targetValue)) >= 0.8
+        ).map(goal => ({
+          id: goal.id,
+          title: goal.title,
+          progress: Math.round((Number(goal.currentValue) / Number(goal.targetValue)) * 100)
+        }))
       },
       conversationHistory: memory.conversationHistory.slice(-5)
     };
