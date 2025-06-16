@@ -25,6 +25,9 @@
   - [Pomodoros](#pomodoros-endpoints)
   - [Flores & Jardim](#flores--jardim-endpoints)
   - [Assistente Lumi](#assistente-lumi-endpoints)
+  - [Metas](#metas-endpoints)
+    - [Analytics](#analytics-endpoints)
+    - [Sequência](#sequência-endpoints)
 - [Códigos de Status](#-códigos-de-status)
 - [Exemplos Práticos](#-exemplos-práticos)
 - [Postman Collection](#-postman-collection)
@@ -979,6 +982,239 @@ Authorization: Bearer <jwt_token>
   }
 }
 ```
+
+---
+
+## Metas Endpoints
+
+O sistema de metas permite que usuários definam e acompanhem objetivos de produtividade.
+
+### POST /api/goals
+Criar nova meta.
+
+**Headers:**
+```
+Authorization: Bearer {token}
+Content-Type: application/json
+```
+
+**Body:**
+```json
+{
+  "title": "Completar 5 tarefas por dia",
+  "description": "Meta para manter consistência diária",
+  "type": "daily",
+  "category": "tasks_completed",
+  "targetValue": 5,
+  "startDate": "2024-06-16T00:00:00.000Z",
+  "endDate": "2024-06-16T23:59:59.999Z"
+}
+```
+
+**Tipos de Meta (type):**
+- `daily` - Meta diária
+- `weekly` - Meta semanal
+- `monthly` - Meta mensal
+- `yearly` - Meta anual
+
+**Categorias (category):**
+- `tasks_completed` - Número de tarefas completadas
+- `pomodoros_completed` - Número de pomodoros completados
+- `focus_time` - Tempo de foco em minutos
+- `productivity_score` - Score de produtividade (0-5)
+
+**Resposta (201):**
+```json
+{
+  "id": "uuid",
+  "title": "Completar 5 tarefas por dia",
+  "description": "Meta para manter consistência diária",
+  "type": "daily",
+  "category": "tasks_completed",
+  "status": "active",
+  "targetValue": 5,
+  "currentValue": 0,
+  "startDate": "2024-06-16T00:00:00.000Z",
+  "endDate": "2024-06-16T23:59:59.999Z",
+  "createdAt": "2024-06-16T10:00:00.000Z",
+  "updatedAt": "2024-06-16T10:00:00.000Z"
+}
+```
+
+### GET /api/goals
+Buscar metas do usuário.
+
+**Query Parameters:**
+- `status` (opcional): `active`, `completed`, `failed`, `paused`
+
+**Resposta (200):**
+```json
+[
+  {
+    "id": "uuid",
+    "title": "Completar 5 tarefas por dia",
+    "type": "daily",
+    "category": "tasks_completed",
+    "status": "active",
+    "targetValue": 5,
+    "currentValue": 3,
+    "startDate": "2024-06-16T00:00:00.000Z",
+    "endDate": "2024-06-16T23:59:59.999Z",
+    "createdAt": "2024-06-16T10:00:00.000Z"
+  }
+]
+```
+
+### GET /api/goals/type/{type}
+Buscar metas por tipo específico.
+
+### PUT /api/goals/{goalId}
+Atualizar meta existente.
+
+### PATCH /api/goals/{goalId}/progress
+Atualizar progresso da meta.
+
+**Body:**
+```json
+{
+  "currentValue": 3
+}
+```
+
+### DELETE /api/goals/{goalId}
+Deletar meta.
+
+### POST /api/goals/check
+Verificar e atualizar status das metas (verifica metas expiradas).
+
+---
+
+## Analytics Endpoints
+
+Sistema de análise de produtividade com dados detalhados.
+
+### GET /api/analytics
+Buscar dados de analytics do usuário.
+
+**Query Parameters:**
+- `days` (opcional, padrão: 30): Número de dias para análise
+
+**Resposta (200):**
+```json
+{
+  "dailyStats": [
+    {
+      "id": "uuid",
+      "date": "2024-06-16T00:00:00.000Z",
+      "tasksCompleted": 5,
+      "pomodorosCompleted": 8,
+      "focusTimeMinutes": 200,
+      "productivityScore": 4.2,
+      "hourlyActivity": {
+        "9": 60,
+        "10": 90,
+        "14": 50
+      },
+      "goalsMet": true,
+      "activeGoalsCount": 3,
+      "completedGoalsCount": 2
+    }
+  ],
+  "weeklyAverage": {
+    "tasksCompleted": 4.2,
+    "pomodorosCompleted": 6.8,
+    "focusTime": 170.5,
+    "productivityScore": 3.8
+  },
+  "monthlyTrends": [
+    {
+      "month": "2024-06",
+      "tasksCompleted": 4.5,
+      "pomodorosCompleted": 7.2,
+      "focusTime": 180.3
+    }
+  ],
+  "bestPerformanceDays": [
+    {
+      "date": "2024-06-15T00:00:00.000Z",
+      "tasksCompleted": 8,
+      "pomodorosCompleted": 12,
+      "productivityScore": 4.8
+    }
+  ],
+  "mostProductiveHours": [
+    {
+      "hour": 9,
+      "activityLevel": 45.6
+    },
+    {
+      "hour": 14,
+      "activityLevel": 38.2
+    }
+  ]
+}
+```
+
+### POST /api/analytics/daily
+Atualizar performance diária manualmente.
+
+**Body (opcional):**
+```json
+{
+  "date": "2024-06-16T00:00:00.000Z"
+}
+```
+
+### GET /api/analytics/daily/{YYYY-MM-DD}
+Buscar performance de data específica.
+
+---
+
+## Sequência Endpoints
+
+Sistema de sequência de atividade diária (estilo Duolingo).
+
+### GET /api/streak
+Buscar dados da sequência do usuário.
+
+**Resposta (200):**
+```json
+{
+  "id": "uuid",
+  "currentStreak": 7,
+  "longestStreak": 15,
+  "lastActivityDate": "2024-06-16T00:00:00.000Z",
+  "streakStartDate": "2024-06-10T00:00:00.000Z",
+  "totalActiveDays": 45,
+  "streakHistory": [
+    {
+      "startDate": "2024-05-01T00:00:00.000Z",
+      "endDate": "2024-05-15T00:00:00.000Z",
+      "length": 15
+    }
+  ]
+}
+```
+
+### GET /api/streak/stats
+Estatísticas detalhadas da sequência.
+
+**Resposta (200):**
+```json
+{
+  "currentStreak": 7,
+  "longestStreak": 15,
+  "totalActiveDays": 45,
+  "streakHistory": [...],
+  "isActiveToday": true
+}
+```
+
+### POST /api/streak/update
+Atualizar sequência (chamado automaticamente ao completar tarefas).
+
+### POST /api/streak/check-break
+Verificar possível quebra de sequência.
 
 ---
 
