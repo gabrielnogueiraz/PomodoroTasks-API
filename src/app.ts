@@ -20,33 +20,125 @@ app.use((req, res, next) => {
 });
 
 const getAllowedOrigins = () => {
-  if (process.env.NODE_ENV === "production") {
-    const origins = [
-      process.env.FRONTEND_URL,
-      "http://localhost:3000",
-      "http://localhost:3001",
-      "http://localhost:5000",
-      "http://localhost:5173",
-      "http://127.0.0.1:3000",
-    ].filter(Boolean);
+  const productionOrigins = [
+    "https://usetoivo.vercel.app",
+    "https://toivo.vercel.app",
+    "https://pomodoro-tasks-api.vercel.app",
+    process.env.FRONTEND_URL,
+    process.env.RAILWAY_PUBLIC_DOMAIN ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}` : null,
+  ].filter(Boolean);
 
-    return origins.length > 0 ? origins : false;
+  const developmentOrigins = [
+    "http://localhost:3000",
+    "http://localhost:3001", 
+    "http://localhost:5000",
+    "http://localhost:5173",
+    "http://127.0.0.1:3000",
+    "http://127.0.0.1:5173",
+  ];
+
+  if (process.env.NODE_ENV === "production") {
+    logger.info(`Production CORS Origins: ${JSON.stringify(productionOrigins)}`);
+    logger.info(`FRONTEND_URL env var: ${process.env.FRONTEND_URL}`);
+    logger.info(`RAILWAY_PUBLIC_DOMAIN env var: ${process.env.RAILWAY_PUBLIC_DOMAIN}`);
+    return productionOrigins;
   }
-  return true; // Desenvolvimento: permite qualquer origin
+  
+  // Em desenvolvimento, retorna todas as origins permitidas
+  return [...developmentOrigins, ...productionOrigins];
 };
 
 const corsOptions = {
-  origin: getAllowedOrigins(),
+  origin: function (origin, callback) {
+    const allowedOrigins = getAllowedOrigins();
+    
+    logger.info(`CORS check for origin: ${origin}`);
+    logger.info(`Allowed origins: ${JSON.stringify(allowedOrigins)}`);
+    
+    // Em desenvolvimento, permite qualquer origin
+    if (process.env.NODE_ENV !== "production") {
+      logger.info(`Development mode: allowing all origins`);
+      return callback(null, true);
+    }
+    
+    // Permite requisições sem origin (ex: Postman, curl)
+    if (!origin) {
+      logger.info(`No origin header present - allowing request`);
+      return callback(null, true);
+    }
+    
+    // Em produção, verifica lista de origins permitidas
+    if (Array.isArray(allowedOrigins) && allowedOrigins.includes(origin)) {
+      logger.info(`Origin ${origin} is allowed`);
+      return callback(null, true);
+    } else {
+      logger.warn(`CORS blocked for origin: ${origin}`);
+      logger.warn(`Allowed origins were: ${JSON.stringify(allowedOrigins)}`);
+      return callback(new Error(`CORS policy: Origin ${origin} is not allowed`), false);
+    }
+  },
   methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
+  allowedHeaders: [
+    "Content-Type", 
+    "Authorization", 
+    "X-Requested-With",
+    "Accept",
+    "Origin",
+    "Access-Control-Request-Method",
+    "Access-Control-Request-Headers",
+    "X-CSRF-Token"
+  ],
   credentials: true,
-  optionsSuccessStatus: 200, // Para suporte a browsers antigos
+  optionsSuccessStatus: 200,
+  preflightContinue: false,
 };
 
 // Log CORS configuration for debugging
 logger.info(`CORS Origins: ${JSON.stringify(getAllowedOrigins())}`);
 
 app.use(cors(corsOptions));
+
+// Middleware adicional para CORS em produção com logging detalhado
+const corsMiddleware = (req: Request, res: Response, next: NextFunction) => {
+  const origin = req.headers.origin;
+  const allowedOrigins = getAllowedOrigins();
+  
+  // Log detalhado para debugging
+  if (req.method === 'OPTIONS') {
+    logger.info(`OPTIONS request from origin: ${origin}`);
+    logger.info(`Request headers: ${JSON.stringify(req.headers)}`);
+  }
+  
+  if (process.env.NODE_ENV === "production") {
+    // Sempre permitir a URL principal do frontend
+    const isAllowedOrigin = !origin || 
+      origin === "https://usetoivo.vercel.app" || 
+      (Array.isArray(allowedOrigins) && allowedOrigins.includes(origin));
+    
+    if (isAllowedOrigin && origin) {
+      res.setHeader('Access-Control-Allow-Origin', origin);
+      logger.info(`Set CORS origin header to: ${origin}`);
+    } else if (!origin) {
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      logger.info(`No origin header - set to wildcard`);
+    }
+    
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin, X-CSRF-Token');
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    res.setHeader('Access-Control-Max-Age', '86400'); // 24 hours
+    
+    if (req.method === 'OPTIONS') {
+      logger.info(`Responding to OPTIONS preflight request`);
+      res.status(200).end();
+      return;
+    }
+  }
+  
+  next();
+};
+
+app.use(corsMiddleware);
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
