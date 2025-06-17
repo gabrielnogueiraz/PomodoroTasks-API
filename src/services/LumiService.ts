@@ -12,6 +12,8 @@ import { FlowerService } from "./FlowerService";
 import { GoalService } from "./GoalService";
 import { AnalyticsService } from "./AnalyticsService";
 import { StreakService } from "./StreakService";
+import { KanbanService } from "./KanbanService";
+import { ProductivityAnalyticsService } from "./ProductivityAnalyticsService";
 import { logger } from "../utils/logger";
 
 // Tipos para as ações do Lumi
@@ -61,6 +63,8 @@ export class LumiService {
   private goalService: GoalService;
   private analyticsService: AnalyticsService;
   private streakService: StreakService;
+  private kanbanService: KanbanService;
+  private productivityAnalyticsService: ProductivityAnalyticsService;
 
   constructor() {
     this.lumiMemoryRepository = AppDataSource.getRepository(LumiMemory);
@@ -74,6 +78,8 @@ export class LumiService {
     this.goalService = new GoalService();
     this.analyticsService = new AnalyticsService();
     this.streakService = new StreakService();
+    this.kanbanService = new KanbanService();
+    this.productivityAnalyticsService = new ProductivityAnalyticsService();
   }
 
   async getOrCreateLumiMemory(userId: string): Promise<LumiMemory> {
@@ -129,7 +135,7 @@ export class LumiService {
 
     return memory;
   }  async getFullUserContext(userId: string): Promise<LumiContextData> {
-    const [user, recentTasks, recentFlowers, memory, streakStats, activeGoals, analytics] = await Promise.all([
+    const [user, recentTasks, recentFlowers, memory, streakStats, activeGoals, analytics, kanbanBoards, productivityInsights] = await Promise.all([
       this.userRepository.findOne({
         where: { id: userId },
         relations: ["garden"],
@@ -150,7 +156,9 @@ export class LumiService {
       this.getOrCreateLumiMemory(userId),
       this.streakService.getStreakStats(userId),
       this.goalService.getUserGoals(userId),
-      this.analyticsService.getAnalytics(userId, 7)
+      this.analyticsService.getAnalytics(userId, 7),
+      this.kanbanService.getUserBoards(userId),
+      this.productivityAnalyticsService.getProductivityInsights(userId, 30)
     ]);
 
     if (!user) {
@@ -219,6 +227,68 @@ export class LumiService {
           title: goal.title,
           progress: Math.round((Number(goal.currentValue) / Number(goal.targetValue)) * 100)
         }))
+      },      kanbanBoards: kanbanBoards.map(board => {
+        const totalTasks = board.columns?.reduce((total, col) => total + (col.tasks?.length || 0), 0) || 0;
+        const completedTasks = board.columns?.reduce((total, col) => 
+          total + (col.tasks?.filter(task => task.status === 'completed').length || 0), 0) || 0;
+        
+        return {
+          id: board.id,
+          name: board.name,
+          description: board.description,
+          goalTitle: board.goal?.title,
+          isActive: board.isActive,
+          columns: board.columns?.map(col => ({
+            id: col.id,
+            name: col.name,
+            position: col.position,
+            taskCount: col.tasks?.length || 0,
+            tasks: col.tasks?.map(task => ({
+              id: task.id,
+              title: task.title,
+              status: task.status,
+              priority: task.priority,
+              dueDate: task.dueDate
+            })) || []
+          })) || [],
+          totalTasks,
+          completedTasks,
+          progress: totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0
+        };
+      }),
+      productivityInsights: {
+        currentWeekScore: Math.round(productivityInsights.averageFocusTime / 10) || 0,
+        averageScore: Math.round(productivityInsights.tasksCompletionRate) || 0,
+        bestPerformanceDay: this.getBestPerformanceDay(productivityInsights.mostProductiveDays),
+        improvementTrend: productivityInsights.tasksCompletionRate > 75 ? 'improving' : 
+                          productivityInsights.tasksCompletionRate > 50 ? 'stable' : 'declining',
+        recommendations: productivityInsights.recommendations?.map(rec => ({
+          type: 'productivity',
+          message: rec,
+          priority: 'medium'
+        })) || [],
+        patterns: {
+          mostProductiveHours: productivityInsights.mostProductiveHours?.map(hour => ({
+            hour: hour.hour || 0,
+            score: Math.round(hour.productivity * 100) || 0
+          })) || [],
+          bestDaysOfWeek: productivityInsights.mostProductiveDays?.map(day => ({
+            day: this.getDayName(day.day || 0),
+            score: Math.round(day.productivity * 100) || 0
+          })) || [],
+          taskCompletionPatterns: {
+            averageTimeToComplete: Math.round(productivityInsights.averageFocusTime) || 0,
+            preferredTaskDuration: 25, // Padrão Pomodoro
+            focusSessionEfficiency: Math.round(productivityInsights.tasksCompletionRate) || 0
+          }
+        },
+        weeklyMetrics: {
+          tasksCompleted: completedTasks.length,
+          pomodorosCompleted: recentTasks.reduce((total, task) => total + (task.completedPomodoros || 0), 0),
+          focusTimeMinutes: Math.round(productivityInsights.averageFocusTime),
+          distractionCount: recentTasks.length - completedTasks.length,
+          productivityScore: Math.round(productivityInsights.tasksCompletionRate)
+        }
       },
       conversationHistory: memory.conversationHistory.slice(-5)
     };
@@ -597,5 +667,22 @@ export class LumiService {
     };
     
     return responses[actionType] || 'Ação registrada.';
+  }
+
+  private getBestPerformanceDay(mostProductiveDays: Array<{ day: number; productivity: number }>): string {
+    if (!mostProductiveDays || mostProductiveDays.length === 0) {
+      return 'N/A';
+    }
+    
+    const bestDay = mostProductiveDays.reduce((best, current) => 
+      current.productivity > best.productivity ? current : best
+    );
+    
+    return this.getDayName(bestDay.day);
+  }
+
+  private getDayName(dayNumber: number): string {
+    const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+    return days[dayNumber] || 'monday';
   }
 }
