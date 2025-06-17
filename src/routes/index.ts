@@ -7,6 +7,8 @@ import { lumiRoutes } from "./lumi.routes";
 import goalRoutes from "./goal.routes";
 import analyticsRoutes from "./analytics.routes";
 import streakRoutes from "./streak.routes";
+import { kanbanRoutes } from "./kanban.routes";
+import { productivityAnalyticsRoutes } from "./productivity-analytics.routes";
 
 const routes = Router();
 
@@ -18,6 +20,8 @@ routes.use("/api/lumi", lumiRoutes);
 routes.use("/api/goals", goalRoutes);
 routes.use("/api/analytics", analyticsRoutes);
 routes.use("/api/streak", streakRoutes);
+routes.use("/api/kanban", kanbanRoutes);
+routes.use("/api/productivity-analytics", productivityAnalyticsRoutes);
 
 routes.get("/", (req: Request, res: Response) => {
   res.json({ 
@@ -30,7 +34,9 @@ routes.get("/", (req: Request, res: Response) => {
       lumi: "/api/lumi",
       goals: "/api/goals",
       analytics: "/api/analytics",
-      streak: "/api/streak"
+      streak: "/api/streak",
+      kanban: "/api/kanban",
+      productivityAnalytics: "/api/productivity-analytics"
     }
   });
 });
