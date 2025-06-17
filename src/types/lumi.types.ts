@@ -43,8 +43,7 @@ export interface LumiContextData {
       hour: number;
       activityLevel: number;
     }>;
-  };
-  goals: {
+  };  goals: {
     active: Array<{
       id: string;
       title: string;
@@ -63,6 +62,62 @@ export interface LumiContextData {
       title: string;
       progress: number;
     }>;
+  };
+  kanbanBoards: Array<{
+    id: string;
+    name: string;
+    description?: string;
+    goalTitle?: string;
+    isActive: boolean;
+    columns: Array<{
+      id: string;
+      name: string;
+      position: number;
+      taskCount: number;
+      tasks: Array<{
+        id: string;
+        title: string;
+        status: string;
+        priority: string;
+        dueDate?: Date;
+      }>;
+    }>;
+    totalTasks: number;
+    completedTasks: number;
+    progress: number;
+  }>;
+  productivityInsights: {
+    currentWeekScore: number;
+    averageScore: number;
+    bestPerformanceDay: string;
+    improvementTrend: string;
+    recommendations: Array<{
+      type: string;
+      message: string;
+      priority: string;
+    }>;
+    patterns: {
+      mostProductiveHours: Array<{
+        hour: number;
+        score: number;
+      }>;
+      bestDaysOfWeek: Array<{
+        day: string;
+        score: number;
+      }>;
+      taskCompletionPatterns: {
+        averageTimeToComplete: number;
+        preferredTaskDuration: number;
+        focusSessionEfficiency: number;
+      };
+    };
+    weeklyMetrics: {
+      tasksCompleted: number;
+      pomodorosCompleted: number;
+      focusTimeMinutes: number;
+      distractionCount: number;
+      productivityScore: number;
+    };
   };
   conversationHistory: Array<{
     timestamp: Date;
