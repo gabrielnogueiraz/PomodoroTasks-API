@@ -6,6 +6,8 @@ import { LumiMemory } from "./LumiMemory";
 import { Goal } from "./Goal";
 import { PerformanceRecord } from "./PerformanceRecord";
 import { Streak } from "./Streak";
+import { KanbanBoard } from "./KanbanBoard";
+import { ProductivityAnalytics } from "./ProductivityAnalytics";
 
 @Entity()
 export class User {
@@ -30,12 +32,16 @@ export class User {
   garden: Garden;
   @OneToOne(() => LumiMemory, lumiMemory => lumiMemory.user)
   lumiMemory: LumiMemory;
-
   @OneToMany(() => Goal, goal => goal.user)
   goals: Goal[];
 
+  @OneToMany(() => KanbanBoard, kanbanBoard => kanbanBoard.user)
+  kanbanBoards: KanbanBoard[];
   @OneToMany(() => PerformanceRecord, performanceRecord => performanceRecord.user)
   performanceRecords: PerformanceRecord[];
+
+  @OneToMany(() => ProductivityAnalytics, analytics => analytics.user)
+  productivityAnalytics: ProductivityAnalytics[];
 
   @OneToOne(() => Streak, streak => streak.user)
   streak: Streak;
