@@ -4,6 +4,7 @@ import { Repository, Between } from "typeorm";
 import { StreakService } from "./StreakService";
 import { AnalyticsService } from "./AnalyticsService";
 import { GoalService } from "./GoalService";
+import { ProductivityAnalyticsService } from "./ProductivityAnalyticsService";
 import { GoalCategory } from "../entities/Goal";
 
 export class TaskService {
@@ -11,12 +12,14 @@ export class TaskService {
   private streakService: StreakService;
   private analyticsService: AnalyticsService;
   private goalService: GoalService;
+  private productivityAnalyticsService: ProductivityAnalyticsService;
 
   constructor() {
     this.taskRepository = AppDataSource.getRepository(Task);
     this.streakService = new StreakService();
     this.analyticsService = new AnalyticsService();
     this.goalService = new GoalService();
+    this.productivityAnalyticsService = new ProductivityAnalyticsService();
   }
   async findAll(): Promise<Task[]> {
     return this.taskRepository.find({
@@ -113,14 +116,17 @@ export class TaskService {
 
     task.status = TaskStatus.COMPLETED;
     task.completedAt = new Date();
-    const completedTask = await this.taskRepository.save(task);
-
-    if (completedTask.user) {
+    const completedTask = await this.taskRepository.save(task);    if (completedTask.user) {
       const userId = typeof completedTask.user === 'string' ? completedTask.user : completedTask.user.id;
       
       await this.streakService.updateStreak(userId);
       await this.analyticsService.updateDailyPerformance(userId, new Date());
       await this.updateTaskGoals(userId);
+      
+      // Registrar analytics de produtividade
+      const completionTime = completedTask.completedAt ? 
+        (completedTask.completedAt.getTime() - completedTask.createdAt.getTime()) / 1000 : 0;
+      await this.productivityAnalyticsService.recordTaskCompletion(userId, id, completionTime);
     }
 
     return completedTask;
