@@ -9,6 +9,9 @@ import { LumiMemory } from "./entities/LumiMemory";
 import { Goal } from "./entities/Goal";
 import { PerformanceRecord } from "./entities/PerformanceRecord";
 import { Streak } from "./entities/Streak";
+import { KanbanBoard } from "./entities/KanbanBoard";
+import { KanbanColumn } from "./entities/KanbanColumn";
+import { ProductivityAnalytics } from "./entities/ProductivityAnalytics";
 import { DatabaseManager } from "./config/database-manager";
 import { logger } from "./utils/logger";
 import * as dotenv from "dotenv";
@@ -23,7 +26,7 @@ const createDataSource = () => {
       url: process.env.DATABASE_URL,
       synchronize: true, 
       logging: true, 
-      entities: [Task, Pomodoro, User, Flower, Garden, LumiMemory, Goal, PerformanceRecord, Streak],
+      entities: [Task, Pomodoro, User, Flower, Garden, LumiMemory, Goal, PerformanceRecord, Streak, KanbanBoard, KanbanColumn, ProductivityAnalytics],
       migrations: [],
       subscribers: [],
       ssl: { rejectUnauthorized: false }, 
@@ -40,7 +43,7 @@ const createDataSource = () => {
     database: process.env.DATABASE_NAME || "pomodorotasks",
     synchronize: !isProduction,
     logging: process.env.NODE_ENV === "development",
-    entities: [Task, Pomodoro, User, Flower, Garden, LumiMemory, Goal, PerformanceRecord, Streak],
+    entities: [Task, Pomodoro, User, Flower, Garden, LumiMemory, Goal, PerformanceRecord, Streak, KanbanBoard, KanbanColumn, ProductivityAnalytics],
     migrations: [],
     subscribers: [],
     ssl: false,
