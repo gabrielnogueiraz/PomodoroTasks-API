@@ -2,14 +2,18 @@ import { Repository } from "typeorm";
 import { AppDataSource } from "../data-source";
 import { Goal, GoalStatus, GoalType, GoalCategory } from "../entities/Goal";
 import { User } from "../entities/User";
+import { KanbanService } from "./KanbanService";
+import { logger } from "../utils/logger";
 
 export class GoalService {
   private goalRepository: Repository<Goal>;
   private userRepository: Repository<User>;
+  private kanbanService: KanbanService;
 
   constructor() {
     this.goalRepository = AppDataSource.getRepository(Goal);
     this.userRepository = AppDataSource.getRepository(User);
+    this.kanbanService = new KanbanService();
   }
 
   async createGoal(goalData: {
@@ -28,15 +32,22 @@ export class GoalService {
 
     if (!user) {
       throw new Error("Usuário não encontrado");
-    }
-
-    const goal = this.goalRepository.create({
+    }    const goal = this.goalRepository.create({
       ...goalData,
       user,
       status: GoalStatus.ACTIVE,
     });
 
-    return await this.goalRepository.save(goal);
+    const savedGoal = await this.goalRepository.save(goal);    // Criar quadro Kanban automaticamente para a nova meta
+    try {
+      await this.kanbanService.createBoardForGoal(savedGoal.id, goalData.userId);
+      logger.info(`Quadro Kanban criado automaticamente para meta ${savedGoal.id}`, "GOAL_SERVICE");
+    } catch (error) {
+      logger.error(`Erro ao criar quadro Kanban para meta ${savedGoal.id}`, "GOAL_SERVICE", error);
+      // Não falha a criação da meta se o quadro não puder ser criado
+    }
+
+    return savedGoal;
   }
 
   async getUserGoals(userId: string, status?: GoalStatus): Promise<Goal[]> {
