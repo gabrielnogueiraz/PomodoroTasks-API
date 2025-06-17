@@ -23,8 +23,11 @@
     "db:migrate": "ts-node scripts/migrate-data.ts",
     "config:validate": "ts-node scripts/validate-config.ts",
     "production:validate": "ts-node scripts/validate-production.ts",
-    "railway:check": "node scripts/railway-check.js",
-    "railway:health": "node scripts/railway-health.js",
+    "railway:check": "node scripts/railway-check.js",    "railway:health": "node scripts/railway-health.js",
+    "init:kanban": "ts-node scripts/initialize-kanban-system.ts",
+    "init:kanban:example": "ts-node scripts/initialize-kanban-system.ts --example",
+    "test:cors": "node scripts/test-frontend-cors.js",
+    "validate:kanban": "node scripts/validate-kanban-system.js",
     "test": "jest",
     "test:lumi": "ts-node scripts/test-lumi-integration.ts",
     "health:check": "curl -f http://localhost:8080/health || exit 1"
