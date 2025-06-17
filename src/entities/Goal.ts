@@ -5,8 +5,10 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   ManyToOne,
+  OneToOne,
 } from "typeorm";
 import { User } from "./User";
+import { KanbanBoard } from "./KanbanBoard";
 
 export enum GoalType {
   DAILY = "daily",
@@ -73,9 +75,14 @@ export class Goal {
 
   @Column({ nullable: true })
   completedAt: Date;
-
   @ManyToOne(() => User, (user) => user.goals)
   user: User;
+
+  @OneToOne(() => KanbanBoard, (kanbanBoard) => kanbanBoard.goal, {
+    cascade: true,
+    eager: true,
+  })
+  kanbanBoard: KanbanBoard;
 
   @CreateDateColumn()
   createdAt: Date;
