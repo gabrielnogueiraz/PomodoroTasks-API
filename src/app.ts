@@ -163,6 +163,28 @@ app.get("/", (req, res) => {
   });
 });
 
+// CORS debug endpoint
+app.get("/cors-debug", (req, res) => {
+  const origin = req.headers.origin;
+  const allowedOrigins = getAllowedOrigins();
+  
+  res.status(200).json({
+    message: "CORS Debug Information",
+    requestOrigin: origin || "No origin header",
+    allowedOrigins: allowedOrigins,
+    environment: process.env.NODE_ENV || "development",
+    frontendUrl: process.env.FRONTEND_URL,
+    railwayDomain: process.env.RAILWAY_PUBLIC_DOMAIN,
+    corsHeaders: {
+      "Access-Control-Allow-Origin": res.getHeader("Access-Control-Allow-Origin"),
+      "Access-Control-Allow-Methods": res.getHeader("Access-Control-Allow-Methods"),
+      "Access-Control-Allow-Headers": res.getHeader("Access-Control-Allow-Headers"),
+      "Access-Control-Allow-Credentials": res.getHeader("Access-Control-Allow-Credentials"),
+    },
+    timestamp: new Date().toISOString(),
+  });
+});
+
 app.use(routes);
 
 const errorHandler: ErrorRequestHandler = (
