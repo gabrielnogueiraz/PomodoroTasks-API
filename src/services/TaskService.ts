@@ -6,6 +6,9 @@ import { AnalyticsService } from "./AnalyticsService";
 import { GoalService } from "./GoalService";
 import { ProductivityAnalyticsService } from "./ProductivityAnalyticsService";
 import { GoalCategory } from "../entities/Goal";
+import { KanbanBoard } from "../entities/KanbanBoard";
+import { KanbanColumn } from "../entities/KanbanColumn";
+import { Goal } from "../entities/Goal";
 
 export class TaskService {
   private taskRepository: Repository<Task>;
@@ -13,44 +16,171 @@ export class TaskService {
   private analyticsService: AnalyticsService;
   private goalService: GoalService;
   private productivityAnalyticsService: ProductivityAnalyticsService;
+  private kanbanBoardRepository: Repository<KanbanBoard>;
+  private kanbanColumnRepository: Repository<KanbanColumn>;
+  private goalRepository: Repository<Goal>;
 
   constructor() {
     this.taskRepository = AppDataSource.getRepository(Task);
+    this.kanbanBoardRepository = AppDataSource.getRepository(KanbanBoard);
+    this.kanbanColumnRepository = AppDataSource.getRepository(KanbanColumn);
+    this.goalRepository = AppDataSource.getRepository(Goal);
     this.streakService = new StreakService();
     this.analyticsService = new AnalyticsService();
     this.goalService = new GoalService();
     this.productivityAnalyticsService = new ProductivityAnalyticsService();
-  }
-  async findAll(): Promise<Task[]> {
+  }  async findAll(): Promise<Task[]> {
     return this.taskRepository.find({
-      relations: ["pomodoros"],
-      select: ["id", "title", "description", "status", "priority", "estimatedPomodoros", "completedPomodoros", "createdAt", "updatedAt"],
+      relations: ["pomodoros", "kanbanBoard", "goal", "kanbanColumn"],
+      select: {
+        id: true,
+        title: true,
+        description: true,
+        status: true,
+        priority: true,
+        estimatedPomodoros: true,
+        completedPomodoros: true,
+        createdAt: true,
+        updatedAt: true,
+        kanbanBoard: { id: true },
+        goal: { id: true },
+        kanbanColumn: { id: true }
+      },
       order: { createdAt: "DESC" },
     });
   }
-
   async findById(id: string): Promise<Task | null> {
     return this.taskRepository.findOne({
       where: { id },
-      relations: ["pomodoros"],
+      relations: ["pomodoros", "kanbanBoard", "goal", "kanbanColumn"],
     });
   }
-
   async findByStatus(status: TaskStatus): Promise<Task[]> {
     return this.taskRepository.find({
       where: { status },
-      relations: ["pomodoros"],
-      select: ["id", "title", "description", "status", "priority", "estimatedPomodoros", "completedPomodoros", "createdAt", "updatedAt"],
+      relations: ["pomodoros", "kanbanBoard", "goal", "kanbanColumn"],
+      select: {
+        id: true,
+        title: true,
+        description: true,
+        status: true,
+        priority: true,
+        estimatedPomodoros: true,
+        completedPomodoros: true,
+        createdAt: true,
+        updatedAt: true,
+        kanbanBoard: { id: true },
+        goal: { id: true },
+        kanbanColumn: { id: true }
+      },
+      order: { createdAt: "DESC" },
+    });
+  }  async findByBoardId(boardId: string, userId: string): Promise<Task[]> {
+    return this.taskRepository.find({
+      where: { 
+        kanbanBoard: { id: boardId },
+        user: { id: userId }
+      },
+      relations: ["pomodoros", "kanbanBoard", "goal", "kanbanColumn"],
       order: { createdAt: "DESC" },
     });
   }
-  async create(taskData: Partial<Task>): Promise<Task> {
-    const task = this.taskRepository.create(taskData);
-    const savedTask = await this.taskRepository.save(task);
 
-    // Nota: Lumi AI independente monitora mudanças diretamente no banco
+  async findByGoalId(goalId: string, userId: string): Promise<Task[]> {
+    return this.taskRepository.find({
+      where: { 
+        goal: { id: goalId },
+        user: { id: userId }
+      },
+      relations: ["pomodoros", "kanbanBoard", "goal", "kanbanColumn"],
+      order: { createdAt: "DESC" },
+    });
+  }
 
-    return savedTask;
+  async findByColumnId(columnId: string, userId: string): Promise<Task[]> {
+    return this.taskRepository.find({
+      where: { 
+        kanbanColumn: { id: columnId },
+        user: { id: userId }
+      },
+      relations: ["pomodoros", "kanbanBoard", "goal", "kanbanColumn"],
+      order: { position: "ASC", createdAt: "DESC" },
+    });
+  }
+
+  async create(taskData: any): Promise<Task> {
+    // Validar se tanto boardId quanto goalId foram fornecidos
+    if (taskData.boardId && taskData.goalId) {
+      throw new Error('Tarefa não pode pertencer a quadro independente E meta simultaneamente');
+    }
+
+    // Validar se o quadro ou meta existe e pertence ao usuário
+    if (taskData.boardId) {
+      const board = await this.kanbanBoardRepository.findOne({
+        where: { id: taskData.boardId, user: { id: taskData.user.id } }
+      });
+      if (!board) {
+        throw new Error('Quadro não encontrado ou não pertence ao usuário');
+      }
+      taskData.kanbanBoard = { id: taskData.boardId };
+    }
+
+    if (taskData.goalId) {
+      const goal = await this.goalRepository.findOne({
+        where: { id: taskData.goalId, user: { id: taskData.user.id } }
+      });
+      if (!goal) {
+        throw new Error('Meta não encontrada ou não pertence ao usuário');
+      }
+      taskData.goal = { id: taskData.goalId };
+    }
+
+    // Validar se a coluna pertence ao quadro correto
+    if (taskData.columnId) {
+      let columnValid = false;
+      
+      if (taskData.boardId) {
+        const column = await this.kanbanColumnRepository.findOne({
+          where: { id: taskData.columnId, board: { id: taskData.boardId } }
+        });
+        columnValid = !!column;
+      } else if (taskData.goalId) {
+        const column = await this.kanbanColumnRepository.findOne({
+          where: { 
+            id: taskData.columnId, 
+            board: { goal: { id: taskData.goalId } } 
+          },
+          relations: ["board", "board.goal"]
+        });
+        columnValid = !!column;
+      }
+
+      if (!columnValid) {
+        throw new Error('Coluna não pertence ao quadro especificado');
+      }
+      
+      taskData.kanbanColumn = { id: taskData.columnId };
+    }    // Remover campos temporários antes de criar a tarefa
+    const { boardId, goalId, columnId, ...cleanTaskData } = taskData;
+
+    try {
+      const task = this.taskRepository.create(cleanTaskData);
+      const savedTask = await this.taskRepository.save(task);
+      
+      // TypeORM save retorna Task quando salva uma única entidade
+      const savedId = (savedTask as any).id;
+
+      // Buscar a tarefa completa com todas as relações
+      const completeTask = await this.taskRepository.findOne({
+        where: { id: savedId },
+        relations: ["pomodoros", "kanbanBoard", "goal", "kanbanColumn"],
+      });
+      
+      return completeTask!;
+    } catch (error) {
+      console.error('Erro ao criar tarefa:', error);
+      throw error;
+    }
   }
   async update(id: string, taskData: Partial<Task>): Promise<Task | null> {
     const task = await this.findById(id);
