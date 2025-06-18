@@ -11,6 +11,18 @@ taskRoutes.get("/", (req: Request, res: Response) =>
   taskController.getAllTasks(req, res)
 );
 
+taskRoutes.get("/board/:boardId", (req: Request, res: Response) =>
+  taskController.getTasksByBoard(req, res)
+);
+
+taskRoutes.get("/goal/:goalId", (req: Request, res: Response) =>
+  taskController.getTasksByGoal(req, res)
+);
+
+taskRoutes.get("/column/:columnId", (req: Request, res: Response) =>
+  taskController.getTasksByColumn(req, res)
+);
+
 taskRoutes.get("/:id", (req: Request, res: Response) =>
   taskController.getTaskById(req, res)
 );
