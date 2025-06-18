@@ -4,6 +4,67 @@ import { logger } from "../utils/logger";
 
 export class KanbanController {
   private kanbanService = new KanbanService();
+
+  // Criar quadro independente (sem meta)
+  createStandaloneBoard = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const { name, description } = req.body;
+      const userId = req.user?.id;
+
+      if (!userId) {
+        res.status(401).json({ error: "Usuário não autenticado" });
+        return;
+      }
+
+      if (!name || name.trim() === "") {
+        res.status(400).json({ error: "Nome do quadro é obrigatório" });
+        return;
+      }
+
+      const board = await this.kanbanService.createStandaloneBoard(name, description, userId);
+      
+      res.status(201).json({
+        message: "Quadro Kanban criado com sucesso",
+        board,
+      });
+    } catch (error) {
+      logger.error("Erro ao criar quadro independente", "KANBAN_CONTROLLER", error);
+      res.status(500).json({ 
+        error: error instanceof Error ? error.message : "Erro interno do servidor" 
+      });
+    }
+  };
+
+  // Buscar quadro por ID
+  getBoardById = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const { boardId } = req.params;
+      const userId = req.user?.id;
+
+      if (!userId) {
+        res.status(401).json({ error: "Usuário não autenticado" });
+        return;
+      }
+
+      const board = await this.kanbanService.getBoardById(boardId, userId);
+      
+      if (!board) {
+        res.status(404).json({ error: "Quadro não encontrado" });
+        return;
+      }
+
+      res.json({
+        message: "Quadro encontrado",
+        board,
+      });
+    } catch (error) {
+      logger.error("Erro ao buscar quadro por ID", "KANBAN_CONTROLLER", error);
+      res.status(500).json({ 
+        error: error instanceof Error ? error.message : "Erro interno do servidor" 
+      });
+    }
+  };
+
   // Criar quadro para uma meta
   createBoardForGoal = async (req: Request, res: Response): Promise<void> => {
     try {
