@@ -114,6 +114,30 @@ export class KanbanService {
     }
   }
 
+  async getBoardById(boardId: string, userId: string): Promise<KanbanBoard | null> {
+    try {
+      return await this.kanbanBoardRepository.findOne({
+        where: { 
+          id: boardId,
+          user: { id: userId },
+          isActive: true
+        },
+        relations: ["columns", "columns.tasks", "goal"],
+        order: {
+          columns: {
+            position: "ASC",
+            tasks: {
+              position: "ASC",
+            },
+          },
+        },
+      });
+    } catch (error) {
+      logger.error("Erro ao buscar quadro Kanban por ID", "KANBAN", error);
+      throw error;
+    }
+  }
+
   async updateBoard(boardId: string, userId: string, updateData: Partial<KanbanBoard>): Promise<KanbanBoard> {
     try {
       const board = await this.kanbanBoardRepository.findOne({
@@ -307,6 +331,58 @@ export class KanbanService {
       logger.info(`Colunas do quadro ${boardId} reordenadas`, "KANBAN");
     } catch (error) {
       logger.error("Erro ao reordenar colunas", "KANBAN", error);
+      throw error;
+    }
+  }
+
+  async createStandaloneBoard(
+    name: string,
+    description: string | undefined,
+    userId: string
+  ): Promise<KanbanBoard> {
+    try {
+      const user = await this.userRepository.findOne({
+        where: { id: userId },
+      });
+
+      if (!user) {
+        throw new Error("Usuário não encontrado");
+      }
+
+      // Criar o quadro Kanban sem meta associada
+      const board = this.kanbanBoardRepository.create({
+        name,
+        description: description || `Quadro Kanban - ${name}`,
+        user,
+        isActive: true,
+        // goal não é definido (null/undefined)
+      });
+
+      const savedBoard = await this.kanbanBoardRepository.save(board);
+
+      // Criar colunas padrão
+      const defaultColumns = [
+        { name: "A Fazer", position: 1, color: "#e3f2fd" },
+        { name: "Em Andamento", position: 2, color: "#fff3e0" },
+        { name: "Concluído", position: 3, color: "#f3e5f5" },
+      ];
+
+      const columns = [];
+      for (const columnData of defaultColumns) {
+        const column = this.kanbanColumnRepository.create({
+          ...columnData,
+          board: savedBoard,
+          isActive: true,
+        });
+        columns.push(await this.kanbanColumnRepository.save(column));
+      }
+
+      savedBoard.columns = columns;
+
+      logger.info(`Quadro Kanban independente criado: ${name}`, "KANBAN");
+      return savedBoard;
+    } catch (error) {
+      logger.error("Erro ao criar quadro Kanban independente", "KANBAN", error);
       throw error;
     }
   }
