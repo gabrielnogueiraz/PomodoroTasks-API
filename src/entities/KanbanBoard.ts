@@ -26,10 +26,9 @@ export class KanbanBoard {
 
   @Column({ default: true })
   isActive: boolean;
-
-  @OneToOne(() => Goal, (goal) => goal.kanbanBoard)
+  @OneToOne(() => Goal, (goal) => goal.kanbanBoard, { nullable: true })
   @JoinColumn()
-  goal: Goal;
+  goal?: Goal;
 
   @ManyToOne(() => User, (user) => user.kanbanBoards)
   user: User;
