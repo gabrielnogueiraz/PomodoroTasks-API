@@ -11,6 +11,8 @@ import { Pomodoro } from "./Pomodoro";
 import { User } from "./User";
 import { Flower } from "./Flower";
 import { KanbanColumn } from "./KanbanColumn";
+import { KanbanBoard } from "./KanbanBoard";
+import { Goal } from "./Goal";
 
 export enum TaskStatus {
   PENDING = "pending",
@@ -82,12 +84,17 @@ export class Task {
   flowers: Flower[];
   @ManyToOne(() => User, (user) => user.tasks)
   user: User;
-
   @ManyToOne(() => KanbanColumn, (column) => column.tasks, {
     nullable: true,
     onDelete: "SET NULL",
   })
   kanbanColumn: KanbanColumn;
+
+  @ManyToOne(() => KanbanBoard, { nullable: true, onDelete: "CASCADE" })
+  kanbanBoard: KanbanBoard;
+
+  @ManyToOne(() => Goal, { nullable: true, onDelete: "CASCADE" })
+  goal: Goal;
 
   @CreateDateColumn()
   createdAt: Date;
