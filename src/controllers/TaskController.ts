@@ -8,15 +8,42 @@ export class TaskController {
   constructor() {
     this.taskService = new TaskService();
   }
-
   async getAllTasks(req: Request, res: Response): Promise<void> {
-    const status = req.query.status as TaskStatus | undefined;
+    try {
+      const status = req.query.status as TaskStatus | undefined;
+      const userId = req.user?.id;
 
-    const tasks = status
-      ? await this.taskService.findByStatus(status)
-      : await this.taskService.findAll();
+      if (!userId) {
+        res.status(401).json({ message: "Usuário não autenticado" });
+        return;
+      }
 
-    res.json(tasks);
+      const tasks = status
+        ? await this.taskService.findByStatus(status)
+        : await this.taskService.findAll();
+
+      // Filtrar apenas tarefas do usuário autenticado
+      const userTasks = tasks.filter(task => task.user?.id === userId);
+
+      // Formatar resposta para incluir boardId e goalId
+      const formattedTasks = userTasks.map(task => ({
+        ...task,
+        boardId: task.kanbanBoard?.id || null,
+        goalId: task.goal?.id || null,
+        columnId: task.kanbanColumn?.id || null,
+      }));
+
+      res.json({
+        success: true,
+        tasks: formattedTasks
+      });
+    } catch (error: any) {
+      console.error('Erro ao buscar tarefas:', error);
+      res.status(500).json({ 
+        success: false,
+        message: error.message || "Erro interno do servidor" 
+      });
+    }
   }
 
   async getTaskById(req: Request, res: Response): Promise<void> {
@@ -29,34 +56,68 @@ export class TaskController {
     }
 
     res.json(task);
-  }
-  async createTask(req: Request, res: Response): Promise<void> {
-    const taskData = req.body;
-    const userId = req.user?.id;
+  }  async createTask(req: Request, res: Response): Promise<void> {
+    try {
+      const taskData = req.body;
+      const userId = req.user?.id;
 
-    if (!userId) {
-      res.status(401).json({ message: "Usuário não autenticado" });
-      return;
+      if (!userId) {
+        res.status(401).json({ message: "Usuário não autenticado" });
+        return;
+      }
+
+      // Validação de campos obrigatórios
+      if (!taskData.title) {
+        res.status(400).json({ message: "Título da tarefa é obrigatório" });
+        return;
+      }
+
+      // Validação de boardId e goalId
+      if (taskData.boardId && taskData.goalId) {
+        res.status(400).json({ 
+          message: "Tarefa não pode pertencer a quadro independente E meta simultaneamente" 
+        });
+        return;
+      }
+
+      if (taskData.startTime && !this.isValidTimeFormat(taskData.startTime)) {
+        res
+          .status(400)
+          .json({ message: "Formato de horário inicial inválido. Use HH:mm" });
+        return;
+      }
+
+      if (taskData.endTime && !this.isValidTimeFormat(taskData.endTime)) {
+        res
+          .status(400)
+          .json({ message: "Formato de horário final inválido. Use HH:mm" });
+        return;
+      }
+
+      taskData.user = { id: userId };
+
+      const task = await this.taskService.create(taskData);
+      
+      // Formatar resposta para incluir boardId e goalId
+      const response = {
+        success: true,
+        message: "Tarefa criada com sucesso",
+        task: {
+          ...task,
+          boardId: task.kanbanBoard?.id || null,
+          goalId: task.goal?.id || null,
+          columnId: task.kanbanColumn?.id || null,
+        }
+      };
+
+      res.status(201).json(response);
+    } catch (error: any) {
+      console.error('Erro ao criar tarefa:', error);
+      res.status(500).json({ 
+        success: false,
+        message: error.message || "Erro interno do servidor" 
+      });
     }
-
-    if (taskData.startTime && !this.isValidTimeFormat(taskData.startTime)) {
-      res
-        .status(400)
-        .json({ message: "Formato de horário inicial inválido. Use HH:mm" });
-      return;
-    }
-
-    if (taskData.endTime && !this.isValidTimeFormat(taskData.endTime)) {
-      res
-        .status(400)
-        .json({ message: "Formato de horário final inválido. Use HH:mm" });
-      return;
-    }
-
-    taskData.user = { id: userId };
-
-    const task = await this.taskService.create(taskData);
-    res.status(201).json(task);
   }
 
   async updateTask(req: Request, res: Response): Promise<void> {
@@ -148,6 +209,102 @@ export class TaskController {
       message: "Tarefa desmarcada como concluída",
       task: updatedTask,
     });
+  }
+
+  async getTasksByBoard(req: Request, res: Response): Promise<void> {
+    try {
+      const { boardId } = req.params;
+      const userId = req.user?.id;
+
+      if (!userId) {
+        res.status(401).json({ message: "Usuário não autenticado" });
+        return;
+      }
+
+      const tasks = await this.taskService.findByBoardId(boardId, userId);
+
+      const formattedTasks = tasks.map(task => ({
+        ...task,
+        boardId: task.kanbanBoard?.id || null,
+        goalId: task.goal?.id || null,
+        columnId: task.kanbanColumn?.id || null,
+      }));
+
+      res.json({
+        success: true,
+        tasks: formattedTasks
+      });
+    } catch (error: any) {
+      console.error('Erro ao buscar tarefas do quadro:', error);
+      res.status(500).json({ 
+        success: false,
+        message: error.message || "Erro interno do servidor" 
+      });
+    }
+  }
+
+  async getTasksByGoal(req: Request, res: Response): Promise<void> {
+    try {
+      const { goalId } = req.params;
+      const userId = req.user?.id;
+
+      if (!userId) {
+        res.status(401).json({ message: "Usuário não autenticado" });
+        return;
+      }
+
+      const tasks = await this.taskService.findByGoalId(goalId, userId);
+
+      const formattedTasks = tasks.map(task => ({
+        ...task,
+        boardId: task.kanbanBoard?.id || null,
+        goalId: task.goal?.id || null,
+        columnId: task.kanbanColumn?.id || null,
+      }));
+
+      res.json({
+        success: true,
+        tasks: formattedTasks
+      });
+    } catch (error: any) {
+      console.error('Erro ao buscar tarefas da meta:', error);
+      res.status(500).json({ 
+        success: false,
+        message: error.message || "Erro interno do servidor" 
+      });
+    }
+  }
+
+  async getTasksByColumn(req: Request, res: Response): Promise<void> {
+    try {
+      const { columnId } = req.params;
+      const userId = req.user?.id;
+
+      if (!userId) {
+        res.status(401).json({ message: "Usuário não autenticado" });
+        return;
+      }
+
+      const tasks = await this.taskService.findByColumnId(columnId, userId);
+
+      const formattedTasks = tasks.map(task => ({
+        ...task,
+        boardId: task.kanbanBoard?.id || null,
+        goalId: task.goal?.id || null,
+        columnId: task.kanbanColumn?.id || null,
+      }));
+
+      res.json({
+        success: true,
+        tasks: formattedTasks
+      });
+    } catch (error: any) {
+      console.error('Erro ao buscar tarefas da coluna:', error);
+      res.status(500).json({ 
+        success: false,
+        message: error.message || "Erro interno do servidor" 
+      });
+    }
   }
 
   private isValidTimeFormat(time: string): boolean {
